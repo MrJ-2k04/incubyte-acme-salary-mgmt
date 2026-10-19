@@ -1,10 +1,28 @@
 from datetime import date, datetime
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.reference import Department
 
 COUNTRY_CODE_PATTERN = r"^[A-Z]{2}$"
+MAX_PAGE_SIZE = 100
+DEFAULT_PAGE_SIZE = 25
+
+
+class SortField(StrEnum):
+    FULL_NAME = "full_name"
+    EMAIL = "email"
+    JOB_TITLE = "job_title"
+    DEPARTMENT = "department"
+    COUNTRY = "country_code"
+    SALARY = "salary"
+    HIRED_ON = "hired_on"
+
+
+class SortOrder(StrEnum):
+    ASC = "asc"
+    DESC = "desc"
 
 
 class EmployeeCreate(BaseModel):
@@ -44,3 +62,22 @@ class EmployeeRead(BaseModel):
     salary: int
     hired_on: date
     archived_at: datetime | None
+
+
+class EmployeeQuery(BaseModel):
+    q: str | None = None
+    country: str | None = None
+    job_title: str | None = None
+    department: Department | None = None
+    include_archived: bool = False
+    sort: SortField = SortField.FULL_NAME
+    order: SortOrder = SortOrder.ASC
+    page: int = Field(default=1, ge=1)
+    size: int = Field(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE)
+
+
+class EmployeePage(BaseModel):
+    items: list[EmployeeRead]
+    total: int
+    page: int
+    size: int

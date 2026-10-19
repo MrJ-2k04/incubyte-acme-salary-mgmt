@@ -4,7 +4,13 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.employees.repository import EmployeeRepository
-from app.employees.schemas import EmployeeCreate, EmployeeUpdate
+from app.employees.schemas import (
+    EmployeeCreate,
+    EmployeePage,
+    EmployeeQuery,
+    EmployeeRead,
+    EmployeeUpdate,
+)
 from app.models import Employee
 
 
@@ -39,6 +45,11 @@ class EmployeeService:
         if employee is None:
             raise EmployeeNotFoundError(employee_id)
         return employee
+
+    def list(self, query: EmployeeQuery) -> EmployeePage:
+        rows, total = self.repository.search(query)
+        items = [EmployeeRead.model_validate(row) for row in rows]
+        return EmployeePage(items=items, total=total, page=query.page, size=query.size)
 
     def update(self, employee_id: int, data: EmployeeUpdate) -> Employee:
         employee = self.get(employee_id)
