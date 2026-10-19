@@ -1,3 +1,4 @@
+import os
 from collections.abc import Iterator
 
 import pytest
@@ -12,12 +13,23 @@ from app.models import Country
 from app.reference import COUNTRIES
 
 
-@pytest.fixture
-def session() -> Iterator[Session]:
+# CI sets this to run the same tests on Postgres. Locally tests use in-memory SQLite.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+
+
+def make_engine():
+    if TEST_DATABASE_URL:
+        return create_engine(TEST_DATABASE_URL)
     # One shared in-memory connection, so every session sees the same fresh database.
-    engine = create_engine(
+    return create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
+
+
+@pytest.fixture
+def session() -> Iterator[Session]:
+    engine = make_engine()
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     with factory() as db:
