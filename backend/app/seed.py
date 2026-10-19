@@ -196,7 +196,8 @@ def seed(session: Session, count: int = DEFAULT_COUNT, batch_size: int = BATCH_S
     session.execute(delete(Employee))
     rows = generate_employees(count)
     for start in range(0, len(rows), batch_size):
-        session.execute(insert(Employee), rows[start : start + batch_size])
+        # One multi-row INSERT per batch. Row-by-row sends cost a network trip each on a remote DB.
+        session.execute(insert(Employee).values(rows[start : start + batch_size]))
     session.commit()
 
 
