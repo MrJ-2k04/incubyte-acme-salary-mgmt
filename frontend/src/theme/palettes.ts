@@ -14,27 +14,42 @@ export type Palette = {
   accents: string[]
 }
 
+const NEUTRAL_LIGHT = {
+  background: '#f7f7f8',
+  surface: '#ffffff',
+  border: '#e6e6e9',
+  text: '#1a1a1d',
+  textMuted: '#6e6e76',
+}
+
+// Charcoal rather than black keeps dark mode soft on the eyes.
+const NEUTRAL_DARK = {
+  background: '#1c1c1f',
+  surface: '#252529',
+  border: '#36363c',
+  text: '#ececee',
+  textMuted: '#a1a1a9',
+}
+
+const ACCENTS = ['#14b8a6', '#0ea5e9', '#f59e0b', '#f43f5e', '#84cc16', '#f97316', '#3b82f6', '#10b981']
+
 export const PALETTES = {
-  indigo: {
-    light: {
-      primary: '#4f46e5',
-      background: '#fafafa',
-      surface: '#ffffff',
-      border: '#e4e4e7',
-      text: '#18181b',
-      textMuted: '#71717a',
-    },
-    dark: {
-      primary: '#818cf8',
-      background: '#09090b',
-      surface: '#111113',
-      border: '#27272a',
-      text: '#fafafa',
-      textMuted: '#a1a1aa',
-    },
-    accents: ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ef4444', '#84cc16'],
+  lagoon: {
+    light: { ...NEUTRAL_LIGHT, primary: '#0f766e' },
+    dark: { ...NEUTRAL_DARK, primary: '#5ec4b6' },
+    accents: ACCENTS,
+  },
+  cobalt: {
+    light: { ...NEUTRAL_LIGHT, primary: '#1d4ed8' },
+    dark: { ...NEUTRAL_DARK, primary: '#7aa2ff' },
+    accents: ACCENTS,
+  },
+  graphite: {
+    light: { ...NEUTRAL_LIGHT, primary: '#27272a' },
+    dark: { ...NEUTRAL_DARK, primary: '#e4e4e7' },
+    accents: ACCENTS,
   },
 } satisfies Record<string, Palette>
 
 // Change this one line to restyle the whole app.
-export const ACTIVE_PALETTE: Palette = PALETTES.indigo
+export const ACTIVE_PALETTE: Palette = PALETTES.lagoon
