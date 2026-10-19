@@ -24,9 +24,16 @@ class EmployeeRepository:
     def countries(self) -> list[Country]:
         return list(self.session.scalars(select(Country).order_by(Country.name)))
 
-    def job_titles(self) -> list[str]:
-        query = select(Employee.job_title).distinct().order_by(Employee.job_title)
-        return list(self.session.scalars(query))
+    def job_titles(self) -> dict[str, list[str]]:
+        query = (
+            select(Employee.department, Employee.job_title)
+            .distinct()
+            .order_by(Employee.department, Employee.job_title)
+        )
+        titles: dict[str, list[str]] = {}
+        for department, title in self.session.execute(query):
+            titles.setdefault(department, []).append(title)
+        return titles
 
     def country_exists(self, code: str) -> bool:
         return self.session.get(Country, code) is not None

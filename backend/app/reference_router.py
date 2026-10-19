@@ -20,7 +20,8 @@ class CountryOption(BaseModel):
 class ReferenceData(BaseModel):
     countries: list[CountryOption]
     departments: list[Department]
-    job_titles: list[str]
+    # Keyed by department, so forms can offer only the titles that belong to the chosen one.
+    job_titles: dict[Department, list[str]]
 
 
 @router.get("", response_model=ReferenceData)

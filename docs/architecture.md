@@ -80,7 +80,7 @@ erDiagram
 | GET | `/api/insights/countries/{code}/job-titles` | Headcount and avg per title in a country |
 | GET | `/api/insights/distribution` | Salary buckets, optional `country` |
 | GET | `/api/insights/summary` | Org-wide totals in USD |
-| GET | `/api/reference` | Countries, departments and job titles for dropdowns |
+| GET | `/api/reference` | Countries, departments and the job titles in use per department |
 | POST | `/api/employees/import` | CSV upload, returns a per-row report |
 | GET | `/api/employees/export` | CSV of the current filters and sort |
 | GET | `/health` | Liveness, never touches the DB |

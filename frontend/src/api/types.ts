@@ -45,7 +45,7 @@ export type CountryOption = { code: string; name: string; currency: string }
 export type ReferenceData = {
   countries: CountryOption[]
   departments: string[]
-  job_titles: string[]
+  job_titles: Record<string, string[]>
 }
 
 export type CountryInsight = {

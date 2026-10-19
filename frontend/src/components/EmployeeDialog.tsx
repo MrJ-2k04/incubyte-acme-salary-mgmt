@@ -10,6 +10,7 @@ import TextField from '@mui/material/TextField'
 import { type FormEvent, useState } from 'react'
 import { useSaveEmployee } from '../api/hooks'
 import type { Employee, EmployeeInput, ReferenceData } from '../api/types'
+import { jobTitlesFor } from '../jobTitles'
 import SelectField from './SelectField'
 
 type Props = {
@@ -94,7 +95,7 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
               required
               value={form.job_title}
               emptyLabel=""
-              options={options(reference.job_titles)}
+              options={options(jobTitlesFor(reference))}
               onChange={set('job_title')}
             />
             <SelectField

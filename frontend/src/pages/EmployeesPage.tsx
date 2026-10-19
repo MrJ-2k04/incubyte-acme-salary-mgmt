@@ -42,6 +42,7 @@ import PageHeader from '../components/PageHeader'
 import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCount, formatDate, formatMoney } from '../format'
+import { jobTitlesFor } from '../jobTitles'
 import { EMPLOYEE_FILTERS, type EmployeeFilters, STATUS_PARAM } from '../routes'
 import { accentFor, softTone } from '../theme/tone'
 import { TOUR_TARGET } from '../tour/steps'
@@ -272,7 +273,7 @@ export default function EmployeesPage() {
             label="Job title"
             value={filters.job_title ?? ''}
             emptyLabel="All job titles"
-            options={options(reference.data?.job_titles)}
+            options={options(jobTitlesFor(reference.data))}
             onChange={filter('job_title')}
           />
           <SelectField

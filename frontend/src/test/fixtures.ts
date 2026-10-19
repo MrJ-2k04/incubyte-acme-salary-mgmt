@@ -23,7 +23,7 @@ export const reference: ReferenceData = {
     { code: 'US', name: 'United States', currency: 'USD' },
   ],
   departments: ['Engineering', 'Finance'],
-  job_titles: ['Accountant', 'Software Engineer'],
+  job_titles: { Engineering: ['Software Engineer'], Finance: ['Accountant'] },
 }
 
 export function page(items: Employee[]): EmployeePage {
