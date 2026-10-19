@@ -179,7 +179,7 @@ export default function EmployeesPage() {
     <Stack spacing={3}>
       <PageHeader
         title="Employees"
-        actionsTour={TOUR_TARGET.csv}
+        actionsTour={TOUR_TARGET.actions}
         subtitle={
           activeCount === undefined || archivedCount === undefined
             ? 'Loading people…'
@@ -245,7 +245,6 @@ export default function EmployeesPage() {
           <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, zIndex: 3 }} />
         )}
         <Tabs
-          data-tour={TOUR_TARGET.statusViews}
           value={status}
           onChange={(_, next: EmployeeStatus) => filter(STATUS_PARAM)(next === EMPLOYEE_STATUS.active ? '' : next)}
           sx={{ px: 2, borderBottom: 1, borderColor: 'divider', minHeight: 48 }}
@@ -327,7 +326,7 @@ export default function EmployeesPage() {
           />
         </Stack>
 
-        <TableContainer>
+        <TableContainer data-tour={TOUR_TARGET.table}>
           <Table>
             <TableHead>
               <TableRow>
