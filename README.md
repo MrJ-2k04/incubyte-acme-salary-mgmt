@@ -45,7 +45,7 @@ cd frontend; npm test
 ## Branches
 
 - `develop`: day-to-day work. CI runs on every push.
-- `production`: what is deployed. Changes arrive by pull request from `develop`, and deploy only after CI passes.
+- `production`: what is deployed. Changes arrive by pull request from `develop`. Render and Vercel deploy each new commit by themselves once all CI checks pass.
 
 ## Docs
 

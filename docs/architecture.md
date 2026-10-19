@@ -22,6 +22,8 @@ One repo with two apps: `backend/` and `frontend/`. They share nothing except th
 
 CI has three jobs: backend lint and tests on SQLite, the same tests plus migrations on a real Postgres container, and frontend lint, type check, tests and build.
 
+Render and Vercel deploy `production` by themselves, but only after all three CI checks pass on that commit. Migrations run when the new API starts, so the database is gated too.
+
 ## Backend layers
 
 ```mermaid
