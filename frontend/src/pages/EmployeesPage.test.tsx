@@ -42,6 +42,15 @@ describe('EmployeesPage', () => {
     })
   })
 
+  it('starts from the filters given in the address', async () => {
+    renderWithProviders(<EmployeesPage />, { route: '/employees?country=IN&job_title=Software+Engineer' })
+    await screen.findByText('Asha Rao')
+
+    expect(lastListUrl.searchParams.get('country')).toBe('IN')
+    expect(lastListUrl.searchParams.get('job_title')).toBe('Software Engineer')
+    expect(screen.getByLabelText('Country')).toHaveValue('IN')
+  })
+
   it('adds an employee through the form', async () => {
     const user = userEvent.setup()
     let posted: unknown

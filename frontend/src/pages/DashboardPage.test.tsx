@@ -53,6 +53,26 @@ describe('DashboardPage', () => {
     expect(within(row).getByText('$24,000')).toBeInTheDocument()
   })
 
+  it('links the headcount and each country to the matching employees', async () => {
+    renderWithProviders(<DashboardPage />)
+
+    expect(await screen.findByRole('link', { name: 'India' })).toHaveAttribute('href', '/employees?country=IN')
+    expect(screen.getByRole('link', { name: /Active employees/ })).toHaveAttribute('href', '/employees')
+  })
+
+  it('links each job title to its employees in the chosen country', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardPage />)
+    await screen.findByRole('cell', { name: 'India' })
+
+    await user.selectOptions(screen.getByLabelText('Country for job titles'), 'IN')
+
+    expect(await screen.findByRole('link', { name: 'Software Engineer' })).toHaveAttribute(
+      'href',
+      '/employees?country=IN&job_title=Software+Engineer',
+    )
+  })
+
   it('shows pay by job title for the chosen country', async () => {
     const user = userEvent.setup()
     renderWithProviders(<DashboardPage />)
