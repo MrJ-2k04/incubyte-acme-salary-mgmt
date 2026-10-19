@@ -1,6 +1,7 @@
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Employee
+from app.models import Country, Employee
 
 
 class EmployeeRepository:
@@ -12,3 +13,10 @@ class EmployeeRepository:
         self.session.commit()
         self.session.refresh(employee)
         return employee
+
+    def country_exists(self, code: str) -> bool:
+        return self.session.get(Country, code) is not None
+
+    def email_taken(self, email: str) -> bool:
+        query = select(Employee.id).where(func.lower(Employee.email) == email.lower())
+        return self.session.scalar(query) is not None
