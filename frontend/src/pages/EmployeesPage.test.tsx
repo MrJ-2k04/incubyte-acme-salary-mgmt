@@ -150,7 +150,7 @@ describe('EmployeesPage', () => {
     expect(await screen.findByText('Email is already in use')).toBeInTheDocument()
   })
 
-  it('archives an employee', async () => {
+  it('asks for confirmation before archiving an employee', async () => {
     const user = userEvent.setup()
     let archived = false
     server.use(
@@ -162,6 +162,12 @@ describe('EmployeesPage', () => {
     renderWithProviders(<EmployeesPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Archive Asha Rao' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Archive Asha Rao?' })).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(archived).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Archive Asha Rao' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Archive' }))
 
     await waitFor(() => expect(archived).toBe(true))
   })
@@ -181,6 +187,7 @@ describe('EmployeesPage', () => {
     renderWithProviders(<EmployeesPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Archive Asha Rao' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Archive' }))
     expect(await screen.findByText('Asha Rao archived')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Undo' }))
 
