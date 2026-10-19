@@ -1,6 +1,7 @@
 import argparse
 import random
 import time
+from collections import Counter
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import NamedTuple
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models import Employee
 from app.reference import COUNTRIES, Department
+from app.seed_names import NAME_POOLS, NAME_REGION
 
 DEFAULT_COUNT = 10_000
 DEFAULT_SEED = 42
@@ -75,112 +77,52 @@ PAY_LEVEL = {
     "BR": 0.35,
 }
 
-FIRST_NAMES = (
-    "Aarav",
-    "Aisha",
-    "Akira",
-    "Amelia",
-    "Ana",
-    "Arjun",
-    "Ben",
-    "Camille",
-    "Carlos",
-    "Chloe",
-    "Daniel",
-    "Diya",
-    "Elena",
-    "Emma",
-    "Ethan",
-    "Felix",
-    "Grace",
-    "Hana",
-    "Hiro",
-    "Isabel",
-    "Ishaan",
-    "Jack",
-    "Julia",
-    "Kavya",
-    "Leon",
-    "Liam",
-    "Lucas",
-    "Maya",
-    "Mei",
-    "Mia",
-    "Noah",
-    "Olivia",
-    "Omar",
-    "Priya",
-    "Rafael",
-    "Riya",
-    "Sakura",
-    "Sofia",
-    "Tom",
-    "Zara",
-)
-LAST_NAMES = (
-    "Anderson",
-    "Bauer",
-    "Brown",
-    "Chen",
-    "Costa",
-    "Dubois",
-    "Fischer",
-    "Garcia",
-    "Gupta",
-    "Ito",
-    "Iyer",
-    "Kim",
-    "Kumar",
-    "Lee",
-    "Martin",
-    "Mehta",
-    "Meyer",
-    "Moreau",
-    "Nair",
-    "Nguyen",
-    "Oliveira",
-    "Patel",
-    "Rao",
-    "Reddy",
-    "Santos",
-    "Sato",
-    "Schmidt",
-    "Shah",
-    "Silva",
-    "Singh",
-    "Smith",
-    "Suzuki",
-    "Tan",
-    "Taylor",
-    "Wang",
-    "Weber",
-    "Williams",
-    "Wilson",
-    "Wong",
-    "Yamamoto",
-)
-
 USD_RATES = {c.code: c.usd_rate for c in COUNTRIES}
+
+
+class NameDealer:
+    """Deals every name pair of a region once, in a shuffled order, before any pair repeats."""
+
+    def __init__(self, rng: random.Random):
+        self.rng = rng
+        self.decks: dict[str, list[tuple[str, str]]] = {}
+        self.emails: Counter[str] = Counter()
+
+    def deal(self, country: str) -> tuple[str, str]:
+        region = NAME_REGION[country]
+        if not self.decks.get(region):
+            first, last = NAME_POOLS[region]
+            deck = [(f, n) for f in first for n in last]
+            self.rng.shuffle(deck)
+            self.decks[region] = deck
+        name = self.decks[region].pop()
+        full_name = " ".join(name)
+        base = ".".join(part.lower() for part in name)
+        self.emails[base] += 1
+        # The second person with a name gets a number, as company mailboxes usually do.
+        number = self.emails[base]
+        email = f"{base}{number if number > 1 else ''}@{EMAIL_DOMAIN}"
+        return full_name, email
 
 
 def generate_employees(count: int, seed: int = DEFAULT_SEED) -> list[dict]:
     rng = random.Random(seed)
+    names = NameDealer(rng)
     codes = list(COUNTRY_WEIGHTS)
     country_weights = list(COUNTRY_WEIGHTS.values())
     hire_days = (HIRE_RANGE[1] - HIRE_RANGE[0]).days
     rows = []
-    for index in range(count):
-        first, last = rng.choice(FIRST_NAMES), rng.choice(LAST_NAMES)
+    for _ in range(count):
         country = rng.choices(codes, country_weights)[0]
+        full_name, email = names.deal(country)
         role = rng.choices(ROLES, ROLE_WEIGHTS)[0]
         usd = role.usd_base * PAY_LEVEL[country] * rng.uniform(0.85, 1.25)
         local = Decimal(str(usd)) / USD_RATES[country]
         archived = rng.random() < ARCHIVED_SHARE
         rows.append(
             {
-                "full_name": f"{first} {last}",
-                # Index keeps emails unique even when names repeat.
-                "email": f"{first}.{last}.{index}@{EMAIL_DOMAIN}".lower(),
+                "full_name": full_name,
+                "email": email,
                 "job_title": role.title,
                 "department": role.department.value,
                 "country_code": country,

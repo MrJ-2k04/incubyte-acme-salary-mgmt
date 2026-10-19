@@ -44,10 +44,10 @@ def test_names_fit_each_employee_country():
         assert first in pool.first and last in pool.last
 
 
-def test_no_full_name_appears_more_than_twice_in_a_full_seed():
+def test_every_name_is_unique_in_a_full_seed():
     names = Counter(row["full_name"] for row in generate_employees(10_000))
 
-    assert max(names.values()) <= 2
+    assert max(names.values()) == 1
 
 
 def test_emails_look_like_company_addresses():
