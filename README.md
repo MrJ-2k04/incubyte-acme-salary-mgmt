@@ -13,5 +13,8 @@ A web tool for ACME's HR team to manage salaries for about 10,000 employees acro
 
 ## Docs
 
+- [Requirements](docs/requirements.md): goal, scope, assumptions and what is left out
+- [Architecture](docs/architecture.md): diagrams, data model, API, trade-offs and performance
+- [AI workflow](docs/ai-workflow.md): how AI tools are used, with a prompt log
 - [Kickoff brief](docs/planning/kickoff-brief.md): context, locked stack and open items
 - [Clarifying questions](docs/planning/Clarifying%20Questions%20for%20Payroll%20Mgmt%20Tool.pdf): questions and assumptions sent to HR

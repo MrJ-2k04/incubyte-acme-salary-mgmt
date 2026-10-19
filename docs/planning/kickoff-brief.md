@@ -32,7 +32,7 @@ Hand this to the agent in the new workspace as the first message, along with the
 | DB prod | Postgres on Neon | Free and persistent, Render free disk is wiped on spin-down |
 | DB tests/local | SQLite in-memory | Fresh DB per test in milliseconds, no Docker |
 | Dialect safety | CI job running API tests on a Postgres service container | Catches SQLite/Postgres drift before deploy instead of just noting it |
-| Money | Integer minor units + ISO currency code, `Decimal` at the edges | Exact, fast aggregates, identical on SQLite and Postgres (SQLite `Numeric` is float-backed) |
+| Money | Integer whole units of annual salary, currency derived from country | Exact, fast aggregates, identical on SQLite and Postgres (SQLite `Numeric` is float-backed). Annual salaries are never quoted in cents |
 | FX | Fixed, versioned FX table to USD | Reproducible, testable cross-country insights, no live network dependency |
 | Indexes | country, job title | Insights group and filter on these |
 | Seed | Batched bulk inserts, fixed random seed | 10k rows in seconds, deterministic demos and perf numbers |
