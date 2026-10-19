@@ -30,15 +30,17 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { API_PATH, buildUrl } from '../api/client'
 import { useEmployees, useImportEmployees, useReference, useSetArchived } from '../api/hooks'
-import type { Employee, EmployeeQuery, SortOrder } from '../api/types'
+import type { Employee, SortOrder } from '../api/types'
 import EmployeeDialog from '../components/EmployeeDialog'
 import ImportResult from '../components/ImportResult'
 import PageHeader from '../components/PageHeader'
 import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCount, formatDate, formatMoney } from '../format'
+import { EMPLOYEE_FILTERS, type EmployeeFilters } from '../routes'
 import { accentFor, softTone } from '../theme/tone'
 
 const PAGE_SIZES = [25, 50, 100]
@@ -57,8 +59,6 @@ const COLUMN_COUNT = COLUMNS.length + 1
 
 const visuallyHidden = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' } as const
 
-type Filters = Pick<EmployeeQuery, 'q' | 'country' | 'job_title' | 'department' | 'include_archived'>
-
 // Undefined means the dialog is closed, null means adding a new employee.
 type Editing = Employee | null | undefined
 
@@ -71,24 +71,37 @@ function initials(name: string): string {
     .toUpperCase()
 }
 
-
 export default function EmployeesPage() {
-  const [filters, setFilters] = useState<Filters>({})
+  const [params, setParams] = useSearchParams()
+  const [includeArchived, setIncludeArchived] = useState(false)
   const [sort, setSort] = useState<keyof Employee>('full_name')
   const [order, setOrder] = useState<SortOrder>('asc')
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(PAGE_SIZES[0])
   const [editing, setEditing] = useState<Editing>()
 
-  const employees = useEmployees({ ...filters, sort, order, page: page + 1, size })
+  // Filters live in the address so the dashboard and shared links can open a filtered list.
+  const filters: EmployeeFilters = Object.fromEntries(
+    EMPLOYEE_FILTERS.flatMap((key) => (params.get(key) ? [[key, params.get(key)]] : [])),
+  )
+  const query = { ...filters, include_archived: includeArchived }
+  const employees = useEmployees({ ...query, sort, order, page: page + 1, size })
   const reference = useReference()
   const setArchived = useSetArchived()
   const importCsv = useImportEmployees()
 
   const countryName = new Map(reference.data?.countries.map((c) => [c.code, c.name]))
 
-  const filter = (field: keyof Filters) => (value: string | boolean) => {
-    setFilters((current) => ({ ...current, [field]: value }))
+  const filter = (key: keyof EmployeeFilters) => (value: string) => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        if (value) next.set(key, value)
+        else next.delete(key)
+        return next
+      },
+      { replace: true },
+    )
     setPage(0)
   }
 
@@ -131,7 +144,7 @@ export default function EmployeesPage() {
               variant="outlined"
               color="inherit"
               startIcon={<DownloadRounded />}
-              href={buildUrl(API_PATH.export, { ...filters, sort, order })}
+              href={buildUrl(API_PATH.export, { ...query, sort, order })}
               sx={{ borderColor: 'divider' }}
             >
               Export CSV
@@ -207,8 +220,11 @@ export default function EmployeesPage() {
             control={
               <Switch
                 size="small"
-                checked={Boolean(filters.include_archived)}
-                onChange={(e) => filter('include_archived')(e.target.checked)}
+                checked={includeArchived}
+                onChange={(e) => {
+                  setIncludeArchived(e.target.checked)
+                  setPage(0)
+                }}
               />
             }
             label="Show archived"

@@ -1,10 +1,12 @@
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined'
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined'
 import PublicOutlined from '@mui/icons-material/PublicOutlined'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
+import Link from '@mui/material/Link'
 import LinearProgress from '@mui/material/LinearProgress'
 import Skeleton from '@mui/material/Skeleton'
 import Stack from '@mui/material/Stack'
@@ -17,20 +19,24 @@ import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
 import { BarChart } from '@mui/x-charts/BarChart'
 import { type ReactNode, useState } from 'react'
+import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { useCountryInsights, useDistribution, useJobTitleInsights, useSummary } from '../api/hooks'
 import PageHeader from '../components/PageHeader'
 import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCompactMoney, formatCount, formatMoney } from '../format'
+import { employeesLink } from '../routes'
 
 const REPORTING_CURRENCY = 'USD'
 const CHART_HEIGHT = 300
 const CHART_COLOR = 'var(--mui-palette-primary-main)'
 const NUMERIC = { fontVariantNumeric: 'tabular-nums' } as const
 
-function Stat({ label, value, icon }: { label: string; value?: string; icon: ReactNode }) {
-  return (
-    <Surface sx={{ p: 2.5, height: '100%' }}>
+const ROW_LINK = { cursor: 'pointer' } as const
+
+function Stat({ label, value, icon, to }: { label: string; value?: string; icon: ReactNode; to?: string }) {
+  const card = (
+    <Surface sx={{ p: 2.5, height: '100%', transition: 'border-color 150ms, transform 150ms' }}>
       <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
           {label}
@@ -52,7 +58,40 @@ function Stat({ label, value, icon }: { label: string; value?: string; icon: Rea
       <Typography variant="h5" sx={NUMERIC}>
         {value ?? <Skeleton width="60%" />}
       </Typography>
+      {to && (
+        <Typography
+          variant="caption"
+          color="primary"
+          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1, fontWeight: 600 }}
+        >
+          View employees <ArrowForwardRounded sx={{ fontSize: 14 }} />
+        </Typography>
+      )}
     </Surface>
+  )
+  if (!to) return card
+  return (
+    <Box
+      component={RouterLink}
+      to={to}
+      sx={{
+        display: 'block',
+        height: '100%',
+        color: 'inherit',
+        textDecoration: 'none',
+        '&:hover .MuiPaper-root': { borderColor: 'primary.main', transform: 'translateY(-1px)' },
+      }}
+    >
+      {card}
+    </Box>
+  )
+}
+
+function CellLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link component={RouterLink} to={to} color="inherit" underline="hover" sx={{ fontWeight: 600 }}>
+      {children}
+    </Link>
   )
 }
 
@@ -102,6 +141,7 @@ function Meter({ value, max }: { value: number; max: number }) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const summary = useSummary()
   const countries = useCountryInsights()
   const [titleCountry, setTitleCountry] = useState('')
@@ -125,6 +165,7 @@ export default function DashboardPage() {
         <Grid size={{ xs: 6, md: 3 }}>
           <Stat
             label="Active employees"
+            to={employeesLink()}
             icon={<GroupsOutlined fontSize="small" />}
             value={summary.data && formatCount(summary.data.headcount)}
           />
@@ -152,12 +193,15 @@ export default function DashboardPage() {
         </Grid>
       </Grid>
 
-      <Section title="Pay by country" description="Average salary converted to USD, with local ranges below.">
+      <Section title="Pay by country" description="Average salary in USD. Select a bar or a country to see its people.">
         {countries.data && countries.data.length > 0 && (
-          <Box sx={{ px: 1 }}>
+          <Box sx={{ px: 1, '& .MuiBarElement-root': ROW_LINK }}>
             <BarChart
               height={CHART_HEIGHT}
               dataset={countries.data}
+              onItemClick={(_, item) =>
+                navigate(employeesLink({ country: countries.data[item.dataIndex].country_code }))
+              }
               borderRadius={6}
               hideLegend
               grid={{ horizontal: true }}
@@ -194,8 +238,15 @@ export default function DashboardPage() {
             </TableHead>
             <TableBody>
               {countries.data?.map((c) => (
-                <TableRow key={c.country_code} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>{c.country_name}</TableCell>
+                <TableRow
+                  key={c.country_code}
+                  hover
+                  sx={ROW_LINK}
+                  onClick={() => navigate(employeesLink({ country: c.country_code }))}
+                >
+                  <TableCell>
+                    <CellLink to={employeesLink({ country: c.country_code })}>{c.country_name}</CellLink>
+                  </TableCell>
                   <TableCell align="right" sx={NUMERIC}>
                     {formatCount(c.headcount)}
                   </TableCell>
@@ -227,7 +278,7 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, lg: 6 }}>
           <Section
             title="Pay by job title"
-            description="Compare roles within one country."
+            description="Compare roles within one country, then open any of them."
             action={
               <SelectField
                 id="job-title-country"
@@ -259,8 +310,17 @@ export default function DashboardPage() {
                   </TableHead>
                   <TableBody>
                     {jobTitles.data?.map((t) => (
-                      <TableRow key={t.job_title} hover>
-                        <TableCell sx={{ fontWeight: 600 }}>{t.job_title}</TableCell>
+                      <TableRow
+                        key={t.job_title}
+                        hover
+                        sx={ROW_LINK}
+                        onClick={() => navigate(employeesLink({ country: titleCountry, job_title: t.job_title }))}
+                      >
+                        <TableCell>
+                          <CellLink to={employeesLink({ country: titleCountry, job_title: t.job_title })}>
+                            {t.job_title}
+                          </CellLink>
+                        </TableCell>
                         <TableCell align="right" sx={NUMERIC}>
                           {formatCount(t.headcount)}
                         </TableCell>
