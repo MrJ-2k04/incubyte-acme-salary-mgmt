@@ -7,7 +7,7 @@ import type { CountryInsight } from '../api/types'
 import { url } from '../test/fixtures'
 import { renderWithProviders } from '../test/render'
 import { server } from '../test/server'
-import InsightsPage from './InsightsPage'
+import DashboardPage from './DashboardPage'
 
 const india: CountryInsight = {
   country_code: 'IN',
@@ -37,25 +37,45 @@ beforeEach(() => {
   )
 })
 
-describe('InsightsPage', () => {
+describe('DashboardPage', () => {
   it('shows org-wide totals in USD', async () => {
-    renderWithProviders(<InsightsPage />)
+    renderWithProviders(<DashboardPage />)
 
     expect(await screen.findByText('9,691')).toBeInTheDocument()
     expect(screen.getByText('$755,108,661')).toBeInTheDocument()
   })
 
   it('shows pay per country in local currency and USD', async () => {
-    renderWithProviders(<InsightsPage />)
+    renderWithProviders(<DashboardPage />)
 
     const row = (await screen.findByRole('cell', { name: 'India' })).closest('tr')!
     expect(within(row).getByText('₹2,000,000')).toBeInTheDocument()
     expect(within(row).getByText('$24,000')).toBeInTheDocument()
   })
 
+  it('links the headcount and each country to the matching employees', async () => {
+    renderWithProviders(<DashboardPage />)
+
+    expect(await screen.findByRole('link', { name: 'India' })).toHaveAttribute('href', '/employees?country=IN')
+    expect(screen.getByRole('link', { name: /Active employees/ })).toHaveAttribute('href', '/employees')
+  })
+
+  it('links each job title to its employees in the chosen country', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardPage />)
+    await screen.findByRole('cell', { name: 'India' })
+
+    await user.selectOptions(screen.getByLabelText('Country for job titles'), 'IN')
+
+    expect(await screen.findByRole('link', { name: 'Software Engineer' })).toHaveAttribute(
+      'href',
+      '/employees?country=IN&job_title=Software+Engineer',
+    )
+  })
+
   it('shows pay by job title for the chosen country', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<InsightsPage />)
+    renderWithProviders(<DashboardPage />)
     await screen.findByRole('cell', { name: 'India' })
 
     await user.selectOptions(screen.getByLabelText('Country for job titles'), 'IN')

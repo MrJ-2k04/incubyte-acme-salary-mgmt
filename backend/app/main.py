@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.employees.csv_io import InvalidCsvError
 from app.employees.router import router as employees_router
 from app.employees.service import (
     DuplicateEmailError,
@@ -18,6 +19,7 @@ ERROR_RESPONSES = {
     EmployeeNotFoundError: (status.HTTP_404_NOT_FOUND, "Employee not found"),
     UnknownCountryError: (status.HTTP_422_UNPROCESSABLE_CONTENT, "Unknown country"),
     DuplicateEmailError: (status.HTTP_409_CONFLICT, "Email is already in use"),
+    InvalidCsvError: (status.HTTP_422_UNPROCESSABLE_CONTENT, None),
 }
 
 app = FastAPI(title="ACME Salary Management API")
@@ -34,7 +36,8 @@ app.include_router(reference_router)
 
 def domain_error_handler(request: Request, error: Exception) -> JSONResponse:
     code, message = ERROR_RESPONSES[type(error)]
-    return JSONResponse(status_code=code, content={"detail": message})
+    # None means the error itself says what was wrong.
+    return JSONResponse(status_code=code, content={"detail": message or str(error)})
 
 
 for error_type in ERROR_RESPONSES:

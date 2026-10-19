@@ -1,7 +1,7 @@
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.employees.schemas import EmployeeQuery, SortOrder
+from app.employees.schemas import EmployeeQuery, EmployeeStatus, SortOrder
 from app.models import Country, Employee
 
 
@@ -24,9 +24,16 @@ class EmployeeRepository:
     def countries(self) -> list[Country]:
         return list(self.session.scalars(select(Country).order_by(Country.name)))
 
-    def job_titles(self) -> list[str]:
-        query = select(Employee.job_title).distinct().order_by(Employee.job_title)
-        return list(self.session.scalars(query))
+    def job_titles(self) -> dict[str, list[str]]:
+        query = (
+            select(Employee.department, Employee.job_title)
+            .distinct()
+            .order_by(Employee.department, Employee.job_title)
+        )
+        titles: dict[str, list[str]] = {}
+        for department, title in self.session.execute(query):
+            titles.setdefault(department, []).append(title)
+        return titles
 
     def country_exists(self, code: str) -> bool:
         return self.session.get(Country, code) is not None
@@ -38,21 +45,34 @@ class EmployeeRepository:
         return self.session.scalar(query) is not None
 
     def search(self, query: EmployeeQuery) -> tuple[list[Employee], int]:
-        filtered = self._filtered(select(Employee), query)
         total = self.session.scalar(self._filtered(select(func.count(Employee.id)), query))
-        column = getattr(Employee, query.sort)
-        ordering = column.desc() if query.order == SortOrder.DESC else column.asc()
-        # Id breaks ties so paging never repeats or skips a row.
         rows = self.session.scalars(
-            filtered.order_by(ordering, Employee.id)
-            .offset((query.page - 1) * query.size)
-            .limit(query.size)
+            self._ordered(query).offset((query.page - 1) * query.size).limit(query.size)
         )
         return list(rows), total
 
+    def search_all(self, query: EmployeeQuery) -> list[Employee]:
+        return list(self.session.scalars(self._ordered(query)))
+
+    def add_all(self, employees: list[Employee]) -> None:
+        self.session.add_all(employees)
+        self.session.commit()
+
+    def existing_emails(self, emails: set[str]) -> set[str]:
+        query = select(func.lower(Employee.email)).where(func.lower(Employee.email).in_(emails))
+        return set(self.session.scalars(query))
+
+    def _ordered(self, query: EmployeeQuery) -> Select:
+        column = getattr(Employee, query.sort)
+        ordering = column.desc() if query.order == SortOrder.DESC else column.asc()
+        # Id breaks ties so paging never repeats or skips a row.
+        return self._filtered(select(Employee), query).order_by(ordering, Employee.id)
+
     def _filtered(self, statement: Select, query: EmployeeQuery) -> Select:
-        if not query.include_archived:
+        if query.status == EmployeeStatus.ACTIVE:
             statement = statement.where(Employee.archived_at.is_(None))
+        if query.status == EmployeeStatus.ARCHIVED:
+            statement = statement.where(Employee.archived_at.is_not(None))
         if query.country:
             statement = statement.where(Employee.country_code == query.country)
         if query.job_title:

@@ -2,7 +2,7 @@
 
 A web tool for ACME's HR team to manage salaries for about 10,000 employees across countries, replacing a hand-kept Excel sheet. It covers employee records, pay insights by country and role, and CSV import and export.
 
-**Status:** all "must have" features are built and tested. CSV import, CSV export and bulk raise are next. Clarifying questions are out with HR, and the build follows the working assumptions until answers arrive.
+**Status:** all "must have" features plus CSV import and export are built and tested. Bulk raise is next. Clarifying questions are out with HR, and the build follows the working assumptions until answers arrive.
 
 ## Seed data
 

@@ -3,6 +3,8 @@ export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 // Mirrors the backend router prefixes. Edit both together.
 export const API_PATH = {
   employees: '/api/employees',
+  export: '/api/employees/export',
+  import: '/api/employees/import',
   employee: (id: number) => `/api/employees/${id}`,
   archive: (id: number) => `/api/employees/${id}/archive`,
   restore: (id: number) => `/api/employees/${id}/restore`,
@@ -34,9 +36,11 @@ export function buildUrl(path: string, params: Params = {}): string {
 
 export async function request<T>(path: string, init: RequestInit & { params?: Params } = {}): Promise<T> {
   const { params, ...rest } = init
+  // The browser sets the multipart boundary itself for file uploads.
+  const isUpload = rest.body instanceof FormData
   const response = await fetch(buildUrl(path, params), {
     ...rest,
-    headers: { 'Content-Type': 'application/json', ...rest.headers },
+    headers: isUpload ? rest.headers : { 'Content-Type': 'application/json', ...rest.headers },
   })
   const body = await response.json()
   if (!response.ok) throw new ApiError(response.status, errorMessage(body.detail))

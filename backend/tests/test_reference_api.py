@@ -6,13 +6,19 @@ from tests.factories import employee_data
 
 def test_reference_lists_countries_departments_and_job_titles_in_use(client, session):
     service = EmployeeService(session)
-    service.create(employee_data(email="a@acmecorp.com", job_title="Designer"))
-    service.create(employee_data(email="b@acmecorp.com", job_title="Accountant"))
-    service.create(employee_data(email="c@acmecorp.com", job_title="Designer"))
+    people = [
+        ("Designer", Department.DESIGN),
+        ("Accountant", Department.FINANCE),
+        ("Designer", Department.DESIGN),
+        ("Analyst", Department.FINANCE),
+    ]
+    for number, (title, department) in enumerate(people):
+        email = f"person{number}@acmecorp.com"
+        service.create(employee_data(email=email, job_title=title, department=department))
 
     body = client.get(REFERENCE_PATH).json()
 
     assert len(body["countries"]) == len(COUNTRIES)
     assert body["countries"][0] == {"code": "AU", "name": "Australia", "currency": "AUD"}
     assert body["departments"] == [d.value for d in Department]
-    assert body["job_titles"] == ["Accountant", "Designer"]
+    assert body["job_titles"] == {"Design": ["Designer"], "Finance": ["Accountant", "Analyst"]}

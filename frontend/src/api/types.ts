@@ -24,12 +24,16 @@ export type EmployeePage = {
 
 export type SortOrder = 'asc' | 'desc'
 
+export const EMPLOYEE_STATUS = { active: 'active', archived: 'archived', all: 'all' } as const
+
+export type EmployeeStatus = (typeof EMPLOYEE_STATUS)[keyof typeof EMPLOYEE_STATUS]
+
 export type EmployeeQuery = {
   q?: string
   country?: string
   job_title?: string
   department?: string
-  include_archived?: boolean
+  status?: EmployeeStatus
   sort?: keyof Employee
   order?: SortOrder
   page?: number
@@ -41,7 +45,7 @@ export type CountryOption = { code: string; name: string; currency: string }
 export type ReferenceData = {
   countries: CountryOption[]
   departments: string[]
-  job_titles: string[]
+  job_titles: Record<string, string[]>
 }
 
 export type CountryInsight = {
@@ -73,4 +77,9 @@ export type Summary = {
 export type Distribution = {
   currency: string
   buckets: { lower: number; upper: number; count: number }[]
+}
+
+export type ImportReport = {
+  imported: number
+  rejected: { line: number; errors: string[] }[]
 }

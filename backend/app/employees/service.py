@@ -1,8 +1,10 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.employees.csv_io import read_csv, write_csv
 from app.employees.repository import EmployeeRepository
 from app.employees.schemas import (
     EmployeeCreate,
@@ -10,6 +12,8 @@ from app.employees.schemas import (
     EmployeeQuery,
     EmployeeRead,
     EmployeeUpdate,
+    ImportReport,
+    RowError,
 )
 from app.models import Country, Employee
 
@@ -43,7 +47,7 @@ class EmployeeService:
     def countries(self) -> list[Country]:
         return self.repository.countries()
 
-    def job_titles(self) -> list[str]:
+    def job_titles(self) -> dict[str, list[str]]:
         return self.repository.job_titles()
 
     def get(self, employee_id: int) -> Employee:
@@ -83,6 +87,41 @@ class EmployeeService:
         employee = self.get(employee_id)
         employee.archived_at = None
         return self.repository.save(employee)
+
+    def export_csv(self, query: EmployeeQuery) -> str:
+        return write_csv(self.repository.search_all(query))
+
+    def import_csv(self, text: str) -> ImportReport:
+        known_countries = {country.code for country in self.repository.countries()}
+        parsed: list[tuple[int, EmployeeCreate]] = []
+        rejected: list[RowError] = []
+        for line, raw in read_csv(text):
+            try:
+                parsed.append((line, EmployeeCreate.model_validate(raw)))
+            except ValidationError as error:
+                messages = [f"{e['loc'][-1]}: {e['msg']}" for e in error.errors()]
+                rejected.append(RowError(line=line, errors=messages))
+        # One query for every email in the file, not one per row.
+        taken = self.repository.existing_emails({data.email.lower() for _, data in parsed})
+        seen: set[str] = set()
+        accepted: list[Employee] = []
+        for line, data in parsed:
+            email = data.email.lower()
+            errors = []
+            if data.country_code not in known_countries:
+                errors.append(f"country_code: Unknown country {data.country_code}")
+            if email in seen:
+                errors.append("email: Repeated in this file")
+            elif email in taken:
+                errors.append("email: Already in use")
+            seen.add(email)
+            if errors:
+                rejected.append(RowError(line=line, errors=errors))
+            else:
+                accepted.append(Employee(**data.model_dump() | {"email": email}))
+        self.repository.add_all(accepted)
+        rejected.sort(key=lambda row: row.line)
+        return ImportReport(imported=len(accepted), rejected=rejected)
 
     def _check_country(self, code: str) -> None:
         if not self.repository.country_exists(code):

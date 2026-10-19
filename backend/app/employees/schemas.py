@@ -20,6 +20,12 @@ class SortField(StrEnum):
     HIRED_ON = "hired_on"
 
 
+class EmployeeStatus(StrEnum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    ALL = "all"
+
+
 class SortOrder(StrEnum):
     ASC = "asc"
     DESC = "desc"
@@ -69,7 +75,7 @@ class EmployeeQuery(BaseModel):
     country: str | None = None
     job_title: str | None = None
     department: Department | None = None
-    include_archived: bool = False
+    status: EmployeeStatus = EmployeeStatus.ACTIVE
     sort: SortField = SortField.FULL_NAME
     order: SortOrder = SortOrder.ASC
     page: int = Field(default=1, ge=1)
@@ -81,3 +87,13 @@ class EmployeePage(BaseModel):
     total: int
     page: int
     size: int
+
+
+class RowError(BaseModel):
+    line: int
+    errors: list[str]
+
+
+class ImportReport(BaseModel):
+    imported: int
+    rejected: list[RowError]

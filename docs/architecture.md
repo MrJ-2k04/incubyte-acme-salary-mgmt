@@ -70,7 +70,7 @@ erDiagram
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/employees` | Paged list with `q`, `country`, `job_title`, `department`, `sort`, `page`, `size` |
+| GET | `/api/employees` | Paged list with `q`, `country`, `job_title`, `department`, `status`, `sort`, `page`, `size` |
 | POST | `/api/employees` | Create |
 | GET | `/api/employees/{id}` | Read one |
 | PATCH | `/api/employees/{id}` | Edit |
@@ -80,15 +80,17 @@ erDiagram
 | GET | `/api/insights/countries/{code}/job-titles` | Headcount and avg per title in a country |
 | GET | `/api/insights/distribution` | Salary buckets, optional `country` |
 | GET | `/api/insights/summary` | Org-wide totals in USD |
-| GET | `/api/reference` | Countries, departments and job titles for dropdowns |
+| GET | `/api/reference` | Countries, departments and the job titles in use per department |
+| POST | `/api/employees/import` | CSV upload, returns a per-row report |
+| GET | `/api/employees/export` | CSV of the current filters and sort |
 | GET | `/health` | Liveness, never touches the DB |
+
+**CSV import rules.** Columns are matched by name, so their order does not matter and extra columns are ignored. A file missing a required column is refused whole. Otherwise every valid row is added and each bad row is reported with its line number and reason. Imported employees are active. An exported file can be imported again.
 
 Planned for the "should have" features, not built yet:
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/employees/import` | CSV upload, returns a per-row report |
-| GET | `/api/employees/export` | CSV of the current filters |
 | POST | `/api/salary-adjustments/preview` | Bulk raise preview |
 | POST | `/api/salary-adjustments` | Bulk raise apply |
 
@@ -116,8 +118,9 @@ Planned for the "should have" features, not built yet:
 - **Insights are SQL aggregates.** `GROUP BY` on indexed columns. The browser receives a few dozen numbers, not rows.
 - **Search** uses a case-insensitive `LIKE` on name and email. At 10,000 rows this is fast without full-text search.
 - **Seeding** uses batched bulk inserts and a fixed random seed. 10,000 rows load in seconds and every run produces the same data.
-- **Import (planned)** will validate the whole file first, then write valid rows in batches inside one transaction.
-- **The insights page loads its charts only when opened.** The main bundle is about 190 kB gzipped and the insights chunk about 95 kB.
+- **Import** checks every email in the file against the database in one query, not one per row. On a remote database each query costs a network round trip.
+- **Seeding and import send rows in bulk.** Row-by-row inserts took over a minute against Neon. One multi-row INSERT per 1,000 rows takes about 4 seconds for 10,000.
+- **The dashboard charts load as their own chunk,** so the employees page never downloads them. The main bundle is about 210 kB gzipped and the dashboard chunk about 95 kB.
 
 ### Measured on 10,000 seeded employees
 
@@ -134,3 +137,6 @@ SQLite on a laptop, average of five runs after one warm-up.
 | List, first page | 4 ms |
 | List, search plus sort by salary | 15 ms |
 | List, page 400 | 20 ms |
+| Export 10,000 employees to CSV | 0.2 s |
+| Import 10,000 employees from CSV | 1.6 s |
+| Seed 10,000 employees into Neon over the internet | 4.0 s |
