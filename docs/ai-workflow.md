@@ -142,3 +142,16 @@ Agent decisions I reviewed:
 Agent mistakes caught by tooling:
 - A Python edit on Windows wrote one character in the wrong encoding. The linter refused the file, and the agent fixed the byte and moved to UTF-8 edits.
 - A tour check passed when both sides were empty, then crashed. The tour tests failed, and the agent fixed the check.
+
+### 12. Polishing the employee screen
+
+> Remove double scroll from employees table. Have a footer showing copyright of webwizards.in. The department should come first and based on that, the job title options are configured. Keep the email text a bit secondary. Actions like archiving should ask for confirmations. While searching, add some debounce, or at least don't steal the focus on each character. Show the theme settings only behind three dots, like Vercel.
+
+**Outcome:** each item landed as its own commit, test first where behaviour changed:
+- **Department first.** The API now returns job titles grouped by department, and both the filter bar and the form offer only the titles of the chosen department. Picking another department clears a title that no longer fits.
+- **Search waits for a pause.** The box keeps its own text and updates the address 300 ms after typing stops, so it never loses focus and partial words never reach the API.
+- **Archiving asks first,** and the Undo toast stays as a second safety net.
+- **Account menu.** The theme switch and the tour moved behind a "⋯" button next to the user, as in Vercel.
+
+Agent mistakes caught by tooling:
+- The delayed search used the address from the render that started the timer, which wiped a country picked in between. An existing filter test failed, and the agent made the timer use the latest address.
