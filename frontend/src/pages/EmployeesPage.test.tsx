@@ -10,6 +10,8 @@ import EmployeesPage from './EmployeesPage'
 
 let lastListUrl: URL
 
+const optionLabels = (select: HTMLElement) => [...(select as HTMLSelectElement).options].map((o) => o.textContent)
+
 beforeEach(() => {
   server.use(
     referenceHandler,
@@ -51,6 +53,33 @@ describe('EmployeesPage', () => {
     expect(screen.getByLabelText('Country')).toHaveValue('IN')
   })
 
+  it('filters by department first and offers only its job titles', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+    const department = screen.getByLabelText('Department')
+    const jobTitle = screen.getByLabelText('Job title')
+    expect(department.compareDocumentPosition(jobTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    await user.selectOptions(jobTitle, 'Software Engineer')
+    await user.selectOptions(department, 'Finance')
+
+    expect(optionLabels(screen.getByLabelText('Job title'))).toEqual(['All job titles', 'Accountant'])
+    expect(screen.getByLabelText('Job title')).toHaveValue('')
+  })
+
+  it('asks for the department before the job title when adding someone', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByLabelText(/^Job title/)).toBeDisabled()
+    await user.selectOptions(within(dialog).getByLabelText(/^Department/), 'Engineering')
+
+    expect(optionLabels(within(dialog).getByLabelText(/^Job title/))).toEqual(['', 'Software Engineer'])
+  })
+
   it('adds an employee through the form', async () => {
     const user = userEvent.setup()
     let posted: unknown
@@ -66,8 +95,8 @@ describe('EmployeesPage', () => {
     const dialog = screen.getByRole('dialog')
     await user.type(within(dialog).getByLabelText(/^Full name/), 'Ben Clark')
     await user.type(within(dialog).getByLabelText(/^Email/), 'ben@acmecorp.com')
-    await user.selectOptions(within(dialog).getByLabelText(/^Job title/), 'Accountant')
     await user.selectOptions(within(dialog).getByLabelText(/^Department/), 'Finance')
+    await user.selectOptions(within(dialog).getByLabelText(/^Job title/), 'Accountant')
     await user.selectOptions(within(dialog).getByLabelText(/^Country/), 'US')
     await user.type(within(dialog).getByLabelText(/^Annual salary/), '90000')
     await user.type(within(dialog).getByLabelText(/^Hire date/), '2024-02-01')
