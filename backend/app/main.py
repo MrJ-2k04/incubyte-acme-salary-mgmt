@@ -9,6 +9,7 @@ from app.employees.service import (
     EmployeeNotFoundError,
     UnknownCountryError,
 )
+from app.insights.router import router as insights_router
 
 HEALTH_PATH = "/health"
 
@@ -26,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(employees_router)
+app.include_router(insights_router)
 
 
 def domain_error_handler(request: Request, error: Exception) -> JSONResponse:
