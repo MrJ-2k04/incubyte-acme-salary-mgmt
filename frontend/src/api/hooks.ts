@@ -9,7 +9,9 @@ import type {
   EmployeeQuery,
   ImportReport,
   JobTitleInsight,
+  RaisePreview,
   ReferenceData,
+  SalaryAdjustment,
   Summary,
 } from './types'
 
@@ -69,6 +71,26 @@ export function useImportEmployees() {
       body.append('file', file)
       return request<ImportReport>(API_PATH.import, { method: 'POST', body })
     },
+    onSuccess: invalidate,
+  })
+}
+
+// Previews are reads, so they are cached per percent and filter like any other query.
+export function useRaisePreview(adjustment: SalaryAdjustment, enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY.employees, 'raise-preview', adjustment],
+    queryFn: () =>
+      request<RaisePreview>(API_PATH.raisePreview, { method: 'POST', body: JSON.stringify(adjustment) }),
+    enabled,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useApplyRaise() {
+  const invalidate = useInvalidateAll()
+  return useMutation({
+    mutationFn: (adjustment: SalaryAdjustment) =>
+      request<{ updated: number }>(API_PATH.raise, { method: 'POST', body: JSON.stringify(adjustment) }),
     onSuccess: invalidate,
   })
 }
