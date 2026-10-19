@@ -2,6 +2,7 @@ import AddRounded from '@mui/icons-material/AddRounded'
 import ArchiveOutlined from '@mui/icons-material/ArchiveOutlined'
 import DownloadRounded from '@mui/icons-material/DownloadRounded'
 import EditOutlined from '@mui/icons-material/EditOutlined'
+import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
 import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import UnarchiveOutlined from '@mui/icons-material/UnarchiveOutlined'
@@ -11,14 +12,14 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import LinearProgress from '@mui/material/LinearProgress'
 import Pagination from '@mui/material/Pagination'
 import Skeleton from '@mui/material/Skeleton'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
-import Switch from '@mui/material/Switch'
+import Tab from '@mui/material/Tab'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -26,6 +27,7 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TableSortLabel from '@mui/material/TableSortLabel'
+import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -33,18 +35,26 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { API_PATH, buildUrl } from '../api/client'
 import { useEmployees, useImportEmployees, useReference, useSetArchived } from '../api/hooks'
-import { EMPLOYEE_STATUS, type Employee, type SortOrder } from '../api/types'
+import { EMPLOYEE_STATUS, type Employee, type EmployeeStatus, type SortOrder } from '../api/types'
 import EmployeeDialog from '../components/EmployeeDialog'
 import ImportResult from '../components/ImportResult'
 import PageHeader from '../components/PageHeader'
 import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCount, formatDate, formatMoney } from '../format'
-import { EMPLOYEE_FILTERS, type EmployeeFilters } from '../routes'
+import { EMPLOYEE_FILTERS, type EmployeeFilters, STATUS_PARAM } from '../routes'
 import { accentFor, softTone } from '../theme/tone'
 
 const PAGE_SIZES = [25, 50, 100]
 const SKELETON_ROWS = 8
+const UNDO_SECONDS = 6
+const COUNT_ONLY = 1
+
+const STATUS_VIEWS: { status: EmployeeStatus; label: string }[] = [
+  { status: EMPLOYEE_STATUS.active, label: 'Active' },
+  { status: EMPLOYEE_STATUS.archived, label: 'Archived' },
+  { status: EMPLOYEE_STATUS.all, label: 'All' },
+]
 
 const COLUMNS: { field: keyof Employee; label: string; numeric?: boolean }[] = [
   { field: 'full_name', label: 'Employee' },
@@ -62,6 +72,8 @@ const visuallyHidden = { position: 'absolute', width: 1, height: 1, overflow: 'h
 // Undefined means the dialog is closed, null means adding a new employee.
 type Editing = Employee | null | undefined
 
+type ArchiveChange = { employee: Employee; archived: boolean }
+
 function initials(name: string): string {
   return name
     .split(' ')
@@ -73,26 +85,34 @@ function initials(name: string): string {
 
 export default function EmployeesPage() {
   const [params, setParams] = useSearchParams()
-  const [includeArchived, setIncludeArchived] = useState(false)
   const [sort, setSort] = useState<keyof Employee>('full_name')
   const [order, setOrder] = useState<SortOrder>('asc')
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(PAGE_SIZES[0])
   const [editing, setEditing] = useState<Editing>()
+  const [lastChange, setLastChange] = useState<ArchiveChange>()
 
   // Filters live in the address so the dashboard and shared links can open a filtered list.
   const filters: EmployeeFilters = Object.fromEntries(
     EMPLOYEE_FILTERS.flatMap((key) => (params.get(key) ? [[key, params.get(key)]] : [])),
   )
-  const query = { ...filters, status: includeArchived ? EMPLOYEE_STATUS.all : EMPLOYEE_STATUS.active }
+  const status = (params.get(STATUS_PARAM) as EmployeeStatus | null) ?? EMPLOYEE_STATUS.active
+  const query = { ...filters, status }
   const employees = useEmployees({ ...query, sort, order, page: page + 1, size })
+  const activeCount = useEmployees({ ...filters, status: EMPLOYEE_STATUS.active, size: COUNT_ONLY }).data?.total
+  const archivedCount = useEmployees({ ...filters, status: EMPLOYEE_STATUS.archived, size: COUNT_ONLY }).data?.total
+  const counts: Record<EmployeeStatus, number | undefined> = {
+    active: activeCount,
+    archived: archivedCount,
+    all: activeCount === undefined || archivedCount === undefined ? undefined : activeCount + archivedCount,
+  }
   const reference = useReference()
   const setArchived = useSetArchived()
   const importCsv = useImportEmployees()
 
   const countryName = new Map(reference.data?.countries.map((c) => [c.code, c.name]))
 
-  const filter = (key: keyof EmployeeFilters) => (value: string) => {
+  const filter = (key: keyof EmployeeFilters | typeof STATUS_PARAM) => (value: string) => {
     setParams(
       (current) => {
         const next = new URLSearchParams(current)
@@ -105,6 +125,16 @@ export default function EmployeesPage() {
     setPage(0)
   }
 
+  function changeArchived({ employee, archived }: ArchiveChange) {
+    setArchived.mutate({ id: employee.id, archived }, { onSuccess: () => setLastChange({ employee, archived }) })
+  }
+
+  function undoLastChange() {
+    if (!lastChange) return
+    setArchived.mutate({ id: lastChange.employee.id, archived: !lastChange.archived })
+    setLastChange(undefined)
+  }
+
   function sortBy(field: keyof Employee) {
     setOrder(field === sort && order === 'asc' ? 'desc' : 'asc')
     setSort(field)
@@ -112,12 +142,19 @@ export default function EmployeesPage() {
 
   const options = (values: string[] = []) => values.map((value) => ({ value, label: value }))
   const total = employees.data?.total
+  const hasFilters = Object.keys(filters).length > 0
+  // Archived rows are dimmed only when they sit among active ones.
+  const dims = (employee: Employee) => (status === EMPLOYEE_STATUS.all && employee.archived_at ? 0.55 : 1)
 
   return (
     <Stack spacing={3}>
       <PageHeader
         title="Employees"
-        subtitle={total === undefined ? 'Loading people…' : `${formatCount(total)} people across the organisation`}
+        subtitle={
+          activeCount === undefined || archivedCount === undefined
+            ? 'Loading people…'
+            : `${formatCount(activeCount)} active · ${formatCount(archivedCount)} archived`
+        }
         actions={
           <>
             <Button
@@ -168,6 +205,33 @@ export default function EmployeesPage() {
         {employees.isFetching && (
           <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, zIndex: 3 }} />
         )}
+        <Tabs
+          value={status}
+          onChange={(_, next: EmployeeStatus) => filter(STATUS_PARAM)(next === EMPLOYEE_STATUS.active ? '' : next)}
+          sx={{ px: 2, borderBottom: 1, borderColor: 'divider', minHeight: 48 }}
+        >
+          {STATUS_VIEWS.map((view) => (
+            <Tab
+              key={view.status}
+              value={view.status}
+              sx={{ minHeight: 48, textTransform: 'none', fontWeight: 600, px: 1.5, minWidth: 0, mr: 1 }}
+              label={
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <span>{view.label}</span>
+                  {counts[view.status] !== undefined && (
+                    <Chip
+                      label={formatCount(counts[view.status]!)}
+                      size="small"
+                      color={status === view.status ? 'primary' : 'default'}
+                      variant={status === view.status ? 'filled' : 'outlined'}
+                      sx={{ height: 20, fontSize: 11, fontWeight: 600, borderColor: 'divider' }}
+                    />
+                  )}
+                </Stack>
+              }
+            />
+          ))}
+        </Tabs>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           spacing={1.5}
@@ -215,20 +279,6 @@ export default function EmployeesPage() {
             options={options(reference.data?.departments)}
             onChange={filter('department')}
           />
-          <FormControlLabel
-            sx={{ ml: { md: 'auto' }, mr: 0, '& .MuiFormControlLabel-label': { fontSize: 14 } }}
-            control={
-              <Switch
-                size="small"
-                checked={includeArchived}
-                onChange={(e) => {
-                  setIncludeArchived(e.target.checked)
-                  setPage(0)
-                }}
-              />
-            }
-            label="Show archived"
-          />
         </Stack>
 
         <TableContainer sx={{ maxHeight: { md: 'calc(100vh - 360px)' }, minHeight: 240 }}>
@@ -268,11 +318,24 @@ export default function EmployeesPage() {
               {employees.data?.items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={COLUMN_COUNT} sx={{ py: 8, textAlign: 'center', border: 0 }}>
-                    <PersonSearchOutlined sx={{ fontSize: 40, color: 'text.disabled' }} />
-                    <Typography sx={{ fontWeight: 600, mt: 1 }}>No employees found</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Try a different search or clear the filters.
-                    </Typography>
+                    {status === EMPLOYEE_STATUS.archived && !hasFilters ? (
+                      <>
+                        <Inventory2Outlined sx={{ fontSize: 40, color: 'text.disabled' }} />
+                        <Typography sx={{ fontWeight: 600, mt: 1 }}>No archived employees</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 420, mx: 'auto' }}>
+                          When someone leaves, archive them instead of deleting. Their records are kept, and they
+                          drop out of payroll insights.
+                        </Typography>
+                      </>
+                    ) : (
+                      <>
+                        <PersonSearchOutlined sx={{ fontSize: 40, color: 'text.disabled' }} />
+                        <Typography sx={{ fontWeight: 600, mt: 1 }}>No employees found</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Try a different search or clear the filters.
+                        </Typography>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               )}
@@ -289,7 +352,7 @@ export default function EmployeesPage() {
                     }}
                   >
                     <TableCell>
-                      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', opacity: archived ? 0.55 : 1 }}>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', opacity: dims(employee) }}>
                         <Avatar
                           sx={[
                             { width: 34, height: 34, fontSize: 13, fontWeight: 600 },
@@ -303,7 +366,11 @@ export default function EmployeesPage() {
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               {employee.full_name}
                             </Typography>
-                            {archived && <Chip label="Archived" size="small" sx={{ height: 20, fontSize: 11 }} />}
+                            {employee.archived_at && (
+                              <Tooltip title={`Archived on ${formatDate(employee.archived_at.slice(0, 10))}`}>
+                                <Chip label="Archived" size="small" sx={{ height: 20, fontSize: 11 }} />
+                              </Tooltip>
+                            )}
                           </Stack>
                           <Typography variant="body2" color="text.secondary" noWrap>
                             {employee.email}
@@ -311,15 +378,15 @@ export default function EmployeesPage() {
                         </Box>
                       </Stack>
                     </TableCell>
-                    <TableCell sx={{ opacity: archived ? 0.55 : 1, whiteSpace: 'nowrap' }}>{employee.job_title}</TableCell>
-                    <TableCell sx={{ opacity: archived ? 0.55 : 1 }}>
+                    <TableCell sx={{ opacity: dims(employee), whiteSpace: 'nowrap' }}>{employee.job_title}</TableCell>
+                    <TableCell sx={{ opacity: dims(employee) }}>
                       <Chip
                         label={employee.department}
                         size="small"
                         sx={[{ height: 24, fontSize: 12 }, softTone(accentFor(employee.department))]}
                       />
                     </TableCell>
-                    <TableCell sx={{ opacity: archived ? 0.55 : 1 }}>
+                    <TableCell sx={{ opacity: dims(employee) }}>
                       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                         <Chip
                           label={employee.country_code}
@@ -334,15 +401,20 @@ export default function EmployeesPage() {
                     </TableCell>
                     <TableCell
                       align="right"
-                      sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', opacity: archived ? 0.55 : 1 }}
+                      sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', opacity: dims(employee) }}
                     >
                       {formatMoney(employee.salary, employee.currency)}
                     </TableCell>
-                    <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', opacity: archived ? 0.55 : 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', opacity: dims(employee) }}>
                       {formatDate(employee.hired_on)}
                     </TableCell>
                     <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      <Stack direction="row" spacing={0.5} className="row-actions" sx={{ justifyContent: 'flex-end' }}>
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        className={archived ? undefined : 'row-actions'}
+                        sx={{ justifyContent: 'flex-end', alignItems: 'center' }}
+                      >
                         <Tooltip title="Edit">
                           <IconButton
                             size="small"
@@ -352,15 +424,27 @@ export default function EmployeesPage() {
                             <EditOutlined fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={archived ? 'Restore' : 'Archive'}>
-                          <IconButton
+                        {archived ? (
+                          <Button
                             size="small"
-                            aria-label={`${archived ? 'Restore' : 'Archive'} ${employee.full_name}`}
-                            onClick={() => setArchived.mutate({ id: employee.id, archived: !archived })}
+                            variant="outlined"
+                            startIcon={<UnarchiveOutlined />}
+                            aria-label={`Restore ${employee.full_name}`}
+                            onClick={() => changeArchived({ employee, archived: false })}
                           >
-                            {archived ? <UnarchiveOutlined fontSize="small" /> : <ArchiveOutlined fontSize="small" />}
-                          </IconButton>
-                        </Tooltip>
+                            Restore
+                          </Button>
+                        ) : (
+                          <Tooltip title="Archive">
+                            <IconButton
+                              size="small"
+                              aria-label={`Archive ${employee.full_name}`}
+                              onClick={() => changeArchived({ employee, archived: true })}
+                            >
+                              <ArchiveOutlined fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -403,6 +487,19 @@ export default function EmployeesPage() {
           </Stack>
         </Stack>
       </Surface>
+
+      <Snackbar
+        open={Boolean(lastChange)}
+        autoHideDuration={UNDO_SECONDS * 1000}
+        onClose={(_, reason) => reason !== 'clickaway' && setLastChange(undefined)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        message={lastChange && `${lastChange.employee.full_name} ${lastChange.archived ? 'archived' : 'restored'}`}
+        action={
+          <Button color="inherit" size="small" onClick={undoLastChange} sx={{ fontWeight: 700 }}>
+            Undo
+          </Button>
+        }
+      />
 
       {editing !== undefined && reference.data && (
         <EmployeeDialog
