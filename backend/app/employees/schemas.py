@@ -19,6 +19,18 @@ class EmployeeCreate(BaseModel):
     hired_on: date
 
 
+class EmployeeUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=200)
+    email: EmailStr | None = None
+    job_title: str | None = Field(default=None, min_length=1, max_length=100)
+    department: Department | None = None
+    country_code: str | None = Field(default=None, pattern=COUNTRY_CODE_PATTERN)
+    salary: int | None = Field(default=None, gt=0)
+    hired_on: date | None = None
+
+
 class EmployeeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
