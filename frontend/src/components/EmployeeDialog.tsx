@@ -42,6 +42,14 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
   const set = (field: keyof Form) => (value: string) => setForm((current) => ({ ...current, [field]: value }))
   const options = (values: string[]) => values.map((value) => ({ value, label: value }))
 
+  function chooseDepartment(department: string) {
+    setForm((current) => ({
+      ...current,
+      department,
+      job_title: jobTitlesFor(reference, department).includes(current.job_title) ? current.job_title : '',
+    }))
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault()
     const data: EmployeeInput = {
@@ -90,22 +98,24 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
               onChange={(e) => set('email')(e.target.value)}
             />
             <SelectField
-              id="job-title"
-              label="Job title"
-              required
-              value={form.job_title}
-              emptyLabel=""
-              options={options(jobTitlesFor(reference))}
-              onChange={set('job_title')}
-            />
-            <SelectField
               id="department"
               label="Department"
               required
               value={form.department}
               emptyLabel=""
               options={options(reference.departments)}
-              onChange={set('department')}
+              onChange={chooseDepartment}
+            />
+            <SelectField
+              id="job-title"
+              label="Job title"
+              required
+              disabled={!form.department}
+              helperText={form.department ? undefined : 'Choose a department first'}
+              value={form.job_title}
+              emptyLabel=""
+              options={options(jobTitlesFor(reference, form.department))}
+              onChange={set('job_title')}
             />
             <SelectField
               id="country"

@@ -114,17 +114,27 @@ export default function EmployeesPage() {
 
   const countryName = new Map(reference.data?.countries.map((c) => [c.code, c.name]))
 
-  const filter = (key: keyof EmployeeFilters | typeof STATUS_PARAM) => (value: string) => {
+  function updateParams(changes: Partial<Record<keyof EmployeeFilters | typeof STATUS_PARAM, string>>) {
     setParams(
       (current) => {
         const next = new URLSearchParams(current)
-        if (value) next.set(key, value)
-        else next.delete(key)
+        for (const [key, value] of Object.entries(changes)) {
+          if (value) next.set(key, value)
+          else next.delete(key)
+        }
         return next
       },
       { replace: true },
     )
     setPage(0)
+  }
+
+  const filter = (key: keyof EmployeeFilters | typeof STATUS_PARAM) => (value: string) => updateParams({ [key]: value })
+
+  // A job title from another department would match nobody, so it is cleared.
+  function chooseDepartment(department: string) {
+    const keepTitle = !department || jobTitlesFor(reference.data, department).includes(filters.job_title ?? '')
+    updateParams(keepTitle ? { department } : { department, job_title: '' })
   }
 
   function changeArchived({ employee, archived }: ArchiveChange) {
@@ -269,20 +279,20 @@ export default function EmployeesPage() {
             onChange={filter('country')}
           />
           <SelectField
-            id="filter-job-title"
-            label="Job title"
-            value={filters.job_title ?? ''}
-            emptyLabel="All job titles"
-            options={options(jobTitlesFor(reference.data))}
-            onChange={filter('job_title')}
-          />
-          <SelectField
             id="filter-department"
             label="Department"
             value={filters.department ?? ''}
             emptyLabel="All departments"
             options={options(reference.data?.departments)}
-            onChange={filter('department')}
+            onChange={chooseDepartment}
+          />
+          <SelectField
+            id="filter-job-title"
+            label="Job title"
+            value={filters.job_title ?? ''}
+            emptyLabel="All job titles"
+            options={options(jobTitlesFor(reference.data, filters.department))}
+            onChange={filter('job_title')}
           />
         </Stack>
 
