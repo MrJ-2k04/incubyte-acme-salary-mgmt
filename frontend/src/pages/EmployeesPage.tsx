@@ -31,7 +31,7 @@ import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { API_PATH, buildUrl } from '../api/client'
 import { useEmployees, useImportEmployees, useReference, useSetArchived } from '../api/hooks'
@@ -51,6 +51,7 @@ const PAGE_SIZES = [25, 50, 100]
 const SKELETON_ROWS = 8
 const UNDO_SECONDS = 6
 const COUNT_ONLY = 1
+const SEARCH_DELAY_MS = 300
 
 const STATUS_VIEWS: { status: EmployeeStatus; label: string }[] = [
   { status: EMPLOYEE_STATUS.active, label: 'Active' },
@@ -93,6 +94,10 @@ export default function EmployeesPage() {
   const [size, setSize] = useState(PAGE_SIZES[0])
   const [editing, setEditing] = useState<Editing>()
   const [lastChange, setLastChange] = useState<ArchiveChange>()
+  // The box keeps its own text, so typing never waits on the address bar or the API.
+  const [search, setSearch] = useState(() => params.get('q') ?? '')
+  const searchTimer = useRef<number>(undefined)
+  useEffect(() => () => window.clearTimeout(searchTimer.current), [])
 
   // Filters live in the address so the dashboard and shared links can open a filtered list.
   const filters: EmployeeFilters = Object.fromEntries(
@@ -130,6 +135,12 @@ export default function EmployeesPage() {
   }
 
   const filter = (key: keyof EmployeeFilters | typeof STATUS_PARAM) => (value: string) => updateParams({ [key]: value })
+
+  // The router hands each render its own copy of the address, so a delayed search must use the newest one.
+  const latestUpdate = useRef(updateParams)
+  useEffect(() => {
+    latestUpdate.current = updateParams
+  })
 
   // A job title from another department would match nobody, so it is cleared.
   function chooseDepartment(department: string) {
@@ -257,8 +268,13 @@ export default function EmployeesPage() {
             placeholder="Search name or email"
             size="small"
             sx={{ minWidth: { md: 280 } }}
-            value={filters.q ?? ''}
-            onChange={(e) => filter('q')(e.target.value)}
+            value={search}
+            onChange={(e) => {
+              const text = e.target.value
+              setSearch(text)
+              window.clearTimeout(searchTimer.current)
+              searchTimer.current = window.setTimeout(() => latestUpdate.current({ q: text }), SEARCH_DELAY_MS)
+            }}
             slotProps={{
               htmlInput: { 'aria-label': 'Search name or email' },
               input: {
