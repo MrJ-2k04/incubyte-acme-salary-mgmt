@@ -1,11 +1,13 @@
 from collections.abc import Iterator
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db import Base
+from app.db import Base, get_session
+from app.main import app
 from app.models import Country
 from app.reference import COUNTRIES
 
@@ -23,3 +25,10 @@ def session() -> Iterator[Session]:
         db.commit()
         yield db
     engine.dispose()
+
+
+@pytest.fixture
+def client(session) -> Iterator[TestClient]:
+    app.dependency_overrides[get_session] = lambda: session
+    yield TestClient(app)
+    app.dependency_overrides.clear()
