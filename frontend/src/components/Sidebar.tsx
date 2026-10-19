@@ -1,4 +1,3 @@
-import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined'
 import Box from '@mui/material/Box'
 import Drawer from '@mui/material/Drawer'
 import List from '@mui/material/List'
@@ -10,6 +9,7 @@ import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS, ROUTE } from '../routes'
 import { TOUR_TARGET } from '../tour/steps'
 import AccountMenu from './AccountMenu'
+import Logo from './Logo'
 
 export const SIDEBAR_WIDTH = 248
 
@@ -34,26 +34,12 @@ export default function Sidebar({ mobile, open, onClose }: Props) {
         }}
       >
         <Box sx={{ height: 64, px: 2.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: 2,
-              display: 'grid',
-              placeItems: 'center',
-              color: 'primary.contrastText',
-              background:
-                'linear-gradient(135deg, var(--mui-palette-primary-light) 0%, var(--mui-palette-primary-dark) 100%)',
-              boxShadow: '0 4px 12px rgba(var(--mui-palette-primary-mainChannel) / 0.35)',
-            }}
-          >
-            <PaymentsOutlined sx={{ fontSize: 18 }} />
-          </Box>
-          <Typography component="h1" sx={{ lineHeight: 1.15 }}>
-            <Box component="span" sx={{ display: 'block', fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <Logo />
+          <Typography component="h1" sx={{ lineHeight: 1.2 }}>
+            <Box component="span" sx={{ display: 'block', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>
               ACME
             </Box>{' '}
-            <Box component="span" sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }}>
+            <Box component="span" sx={{ display: 'block', fontSize: 11.5, color: 'text.secondary', letterSpacing: '0.01em' }}>
               Salary Management
             </Box>
           </Typography>
