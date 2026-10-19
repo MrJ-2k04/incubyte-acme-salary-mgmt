@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: acme-salary-api
+    name: incubyte-acme-salary-mgmt-api
     runtime: python
     plan: free
     region: singapore
