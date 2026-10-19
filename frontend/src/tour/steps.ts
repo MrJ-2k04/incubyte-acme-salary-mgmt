@@ -9,7 +9,7 @@ export const TOUR_TARGET = {
   statusViews: 'status-views',
   filters: 'filters',
   csv: 'csv',
-  theme: 'theme',
+  account: 'account',
 } as const
 
 export type TourStep = {
@@ -62,8 +62,8 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Import a CSV to add people in bulk, or export exactly the list you are looking at.',
   },
   {
-    target: TOUR_TARGET.theme,
+    target: TOUR_TARGET.account,
     title: 'Make it yours',
-    body: 'Choose light or dark, or follow your system setting. That is the tour, enjoy!',
+    body: 'Open the menu here to choose a light, dark or system theme, or to replay this tour. Enjoy!',
   },
 ]

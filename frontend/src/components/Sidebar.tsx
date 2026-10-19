@@ -1,22 +1,17 @@
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined'
-import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Drawer from '@mui/material/Drawer'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
-import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS, ROUTE } from '../routes'
 import { TOUR_TARGET } from '../tour/steps'
-import ThemeModeSwitch from './ThemeModeSwitch'
+import AccountMenu from './AccountMenu'
 
 export const SIDEBAR_WIDTH = 248
-
-// The app has no sign-in yet, so the sidebar shows the one person it is built for.
-const USER_EMAIL = 'hr@acmecorp.com'
 
 type Props = { mobile: boolean; open: boolean; onClose: () => void }
 
@@ -110,28 +105,8 @@ export default function Sidebar({ mobile, open, onClose }: Props) {
           </List>
         </Box>
 
-        <Box sx={{ mt: 'auto', p: 1.5, borderTop: 1, borderColor: 'divider', display: 'grid', gap: 1.5 }}>
-          <Stack
-            direction="row"
-            data-tour={TOUR_TARGET.theme}
-            sx={{ alignItems: 'center', justifyContent: 'space-between', px: 1, borderRadius: 2 }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              Theme
-            </Typography>
-            <ThemeModeSwitch />
-          </Stack>
-          <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', p: 1, borderRadius: 2, bgcolor: 'action.hover' }}>
-            <Avatar sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, bgcolor: 'primary.main' }}>HR</Avatar>
-            <Box sx={{ minWidth: 0, lineHeight: 1.2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
-                HR Manager
-              </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap component="div">
-                {USER_EMAIL}
-              </Typography>
-            </Box>
-          </Stack>
+        <Box sx={{ mt: 'auto', p: 1, borderTop: 1, borderColor: 'divider' }}>
+          <AccountMenu />
         </Box>
       </Drawer>
     </Box>
