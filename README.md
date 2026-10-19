@@ -12,6 +12,13 @@ uv run alembic upgrade head
 uv run python -m app.seed   # replaces all employees with 10,000 generated ones
 ```
 
+## Live
+
+- **App:** https://acme-salary-ui.vercel.app
+- **API docs:** https://incubyte-acme-salary-mgmt.onrender.com/docs
+
+The API runs on Render's free plan, so the first request after a quiet spell can take about 30 seconds.
+
 ## Stack
 
 - **API:** Python, FastAPI, SQLAlchemy, Alembic, Postgres (Neon)
