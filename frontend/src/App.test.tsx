@@ -73,6 +73,7 @@ describe('App', () => {
     const user = userEvent.setup()
     renderWithProviders(<App />)
 
+    await user.click(screen.getByRole('button', { name: 'Account menu' }))
     const theme = screen.getByRole('group', { name: 'Theme' })
     expect(within(theme).getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'true')
 
@@ -82,11 +83,24 @@ describe('App', () => {
     expect(within(theme).getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('shows who is signed in at the foot of the sidebar', () => {
+  it('shows who is signed in and keeps the theme behind the account menu', async () => {
+    const user = userEvent.setup()
     renderWithProviders(<App />)
 
     const sidebar = screen.getByRole('complementary', { name: 'Sidebar' })
     expect(within(sidebar).getByText('HR Manager')).toBeInTheDocument()
-    expect(within(sidebar).getByRole('group', { name: 'Theme' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Theme' })).not.toBeInTheDocument()
+
+    await user.click(within(sidebar).getByRole('button', { name: 'Account menu' }))
+
+    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
+  })
+
+  it('credits webwizards.in in the footer', () => {
+    renderWithProviders(<App />)
+
+    const footer = screen.getByRole('contentinfo')
+    expect(footer).toHaveTextContent(/©/)
+    expect(within(footer).getByRole('link', { name: 'webwizards.in' })).toHaveAttribute('href', 'https://webwizards.in')
   })
 })
