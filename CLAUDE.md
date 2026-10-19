@@ -14,7 +14,7 @@ Working rules for AI agents in this repo. The product is a salary management too
 - **Commit in small steps.** Lowercase Conventional Commits, imperative, outcome not mechanism, no trailing period. Example: `feat: archive employees instead of deleting them`. Subject only by default. Never add an AI co-author trailer.
 - **Ask before committing, pushing or branching.** Stage and show the diff first.
 - **Keep the layers.** Routers handle HTTP only. Services hold rules. Repositories are the only place with queries.
-- **Every salary change goes through one service method.** Edit, import and bulk raise all use it.
+- **Pay changes only in two service methods.** `change_salary` for one person and `raise_salaries` for a group. If HR wants salary history, it is added in those two places.
 - **Server-side everything for lists.** Never return unpaged employee lists.
 
 ## Code style
