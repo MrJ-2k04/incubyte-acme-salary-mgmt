@@ -34,6 +34,20 @@ describe('Product tour', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('shows the employee table before search, then the pay and data actions', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<App />)
+    await user.click(await screen.findByRole('button', { name: 'Start tour' }))
+    const titles: string[] = []
+    for (let step = 1; step < TOUR_STEPS.length - 1; step++) {
+      titles.push(within(screen.getByRole('dialog')).getByRole('heading').textContent!)
+      await user.click(screen.getByRole('button', { name: 'Next' }))
+    }
+
+    const employeeSteps = titles.slice(titles.indexOf('Every employee in one place'))
+    expect(employeeSteps).toEqual(['Every employee in one place', 'Find anyone fast', 'Change pay and move data'])
+  })
+
   it('opens the account menu on the last step so a theme can be picked', async () => {
     const user = userEvent.setup()
     renderWithProviders(<App />)
