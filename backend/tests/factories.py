@@ -1,14 +1,13 @@
 from datetime import date
 
 from app.employees.schemas import EmployeeCreate
-
 from app.reference import Department
 
 
 def employee_data(**overrides) -> EmployeeCreate:
     fields = {
         "full_name": "Asha Rao",
-        "email": "asha.rao@acme.test",
+        "email": "asha.rao@acmecorp.com",
         "job_title": "Software Engineer",
         "department": Department.ENGINEERING,
         "country_code": "IN",

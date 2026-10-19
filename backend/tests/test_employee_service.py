@@ -1,5 +1,4 @@
 from app.employees.service import EmployeeService
-
 from tests.factories import employee_data
 
 
