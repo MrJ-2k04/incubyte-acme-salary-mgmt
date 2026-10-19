@@ -1,8 +1,12 @@
+import re
+from collections import Counter
+
 from sqlalchemy import func, select
 
 from app.models import Employee
 from app.reference import COUNTRIES, Department
 from app.seed import generate_employees, seed
+from app.seed_names import NAME_POOLS, NAME_REGION
 
 COUNTRY_CODES = {c.code for c in COUNTRIES}
 
@@ -31,3 +35,21 @@ def test_seed_replaces_existing_employees(session):
     seed(session, count=20)
 
     assert session.scalar(select(func.count(Employee.id))) == 20
+
+
+def test_names_fit_each_employee_country():
+    for row in generate_employees(2_000, seed=7):
+        pool = NAME_POOLS[NAME_REGION[row["country_code"]]]
+        first, last = row["full_name"].split(" ", 1)
+        assert first in pool.first and last in pool.last
+
+
+def test_no_full_name_appears_more_than_twice_in_a_full_seed():
+    names = Counter(row["full_name"] for row in generate_employees(10_000))
+
+    assert max(names.values()) <= 2
+
+
+def test_emails_look_like_company_addresses():
+    for row in generate_employees(2_000, seed=7):
+        assert re.fullmatch(r"[a-z]+\.[a-z]+\d*@acmecorp\.com", row["email"])
