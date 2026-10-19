@@ -7,12 +7,47 @@ import App from './App'
 import { page, referenceHandler, url } from './test/fixtures'
 import { renderWithProviders } from './test/render'
 import { server } from './test/server'
+import { TOUR_SEEN_KEY } from './tour/steps'
 
 beforeEach(() => {
   server.use(referenceHandler, http.get(url(API_PATH.employees), () => HttpResponse.json(page([]))))
 })
 
+describe('Product tour', () => {
+  it('welcomes a first-time visitor with a short tour', async () => {
+    renderWithProviders(<App />)
+
+    expect(await screen.findByRole('dialog', { name: /Welcome/ })).toBeInTheDocument()
+  })
+
+  it('steps through the tour and stays away once skipped', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderWithProviders(<App />)
+
+    await user.click(await screen.findByRole('button', { name: 'Start tour' }))
+    expect(screen.getByRole('dialog', { name: 'Find your way' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Skip tour' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    unmount()
+    renderWithProviders(<App />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('can be replayed from the top bar', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(TOUR_SEEN_KEY, 'true')
+    renderWithProviders(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Take the product tour' }))
+
+    expect(screen.getByRole('dialog', { name: /Welcome/ })).toBeInTheDocument()
+  })
+})
+
 describe('App', () => {
+  beforeEach(() => localStorage.setItem(TOUR_SEEN_KEY, 'true'))
+
   it('shows the product name and a sidebar with the dashboard first', () => {
     renderWithProviders(<App />)
 
