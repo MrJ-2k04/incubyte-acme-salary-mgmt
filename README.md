@@ -2,7 +2,15 @@
 
 A web tool for ACME's HR team to manage salaries for about 10,000 employees across countries, replacing a hand-kept Excel sheet. It covers employee records, pay insights by country and role, and CSV import and export.
 
-**Status:** planning. Clarifying questions are out with HR, and the build follows the working assumptions until answers arrive.
+**Status:** all "must have" features are built and tested. CSV import, CSV export and bulk raise are next. Clarifying questions are out with HR, and the build follows the working assumptions until answers arrive.
+
+## Seed data
+
+```powershell
+cd backend
+uv run alembic upgrade head
+uv run python -m app.seed   # replaces all employees with 10,000 generated ones
+```
 
 ## Stack
 

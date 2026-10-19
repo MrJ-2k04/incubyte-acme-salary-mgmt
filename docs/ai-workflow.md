@@ -66,3 +66,38 @@ Sent on 2026-10-17 as `docs/planning/Clarifying Questions for Payroll Mgmt Tool.
 > Let's proceed further until we hear back from the HR
 
 **Outcome:** `docs/requirements.md`, `docs/architecture.md` and this log, plus `CLAUDE.md` for agent rules. While writing the architecture doc, the agent proposed storing salaries in whole currency units instead of cents, since annual salaries are never quoted in cents. I accepted.
+
+### 7. Branches and CI/CD
+
+> I'd like to have production as the prod branch and develop as the development branch.
+
+> If I give you the cli access of both vercel and render, can you do every configuration?
+
+**Outcome:** two long-lived branches, `develop` (default) and `production`. I logged in to the Render, Vercel and Neon CLIs myself, and the agent did the rest:
+- Created the Render service, the Vercel project and the Neon database, all in Singapore.
+- Picked the Render workspace with no live free service, so the always-on API stays inside the free hours.
+
+Problems found on the way, and how they were solved:
+- **Agent mistake:** Git Bash on Windows rewrote `/health` into `/Program Files/Git/health` when passed to the Render CLI. The deploy hung on a failing health check. The agent read the logs, found the cause and fixed it. It now disables path conversion for CLI calls.
+- **GitHub did not start CI on push.** The agent traced it to GitHub not recording push events for this repo. It added a manual trigger and runs CI that way until this is resolved.
+- **Some setup was blocked on purpose.** The agent tried to read the Render CLI's stored token to call the API directly, and Claude Code's safety check refused. The two settings that needed it were left for me to set in the dashboards.
+
+### 8. Building while waiting for HR
+
+> Do as much as you can, then I'll take the driver seat later
+
+**Outcome:** the backend and UI for every "must have" were built test-first, in red and green commits:
+- **Employees:** create, edit, archive and restore. Rules: unknown countries are rejected, and emails are unique ignoring case.
+- **Employee list:** paged, searchable, filterable and sortable.
+- **Insights:** pay by country, by job title within a country, an org summary in USD, and salary distribution.
+- **Seed:** 10,000 employees from a fixed seed.
+- **UI:** an employee table with a form dialog, and an insights page with charts.
+
+Agent decisions I reviewed:
+- **Dropped the MUI DataGrid** for a plain table. The free grid allows one filter at a time and does not render rows in jsdom tests.
+- **Wrote API types by hand,** because `openapi-typescript` does not support TypeScript 6 yet.
+- **Bucketed salaries with `CASE` sums** instead of `floor()`, so the same SQL runs on SQLite and Postgres.
+
+Agent mistakes caught by tooling:
+- A commit missed a lint fix. CI caught it, and the agent now runs the full lint before every commit.
+- A test matched a label exactly, and MUI adds " *" to required fields. The test failed, and the agent switched to matching labels by their start.

@@ -11,7 +11,16 @@ flowchart LR
     Health -.- API
 ```
 
-One repo with two apps: `backend/` and `frontend/`. They share nothing except the API contract. Frontend types are generated from the backend's OpenAPI schema, so a change to an endpoint and its screen can land in one commit.
+One repo with two apps: `backend/` and `frontend/`. They share nothing except the API contract. The frontend's types in `src/api/types.ts` mirror the backend's Pydantic schemas, so a change to an endpoint and its screen lands in one commit.
+
+## Delivery
+
+| Branch | Role | CI | Deploys to |
+|---|---|---|---|
+| `develop` | Day-to-day work, default branch | Every push | Vercel preview |
+| `production` | Live app, changed only by pull request from `develop` | Every push and PR | Render (API) and Vercel (UI) |
+
+CI has three jobs: backend lint and tests on SQLite, the same tests plus migrations on a real Postgres container, and frontend lint, type check, tests and build.
 
 ## Backend layers
 
@@ -72,11 +81,16 @@ erDiagram
 | GET | `/api/insights/distribution` | Salary buckets, optional `country` |
 | GET | `/api/insights/summary` | Org-wide totals in USD |
 | GET | `/api/reference` | Countries, departments and job titles for dropdowns |
+| GET | `/health` | Liveness, never touches the DB |
+
+Planned for the "should have" features, not built yet:
+
+| Method | Path | Purpose |
+|---|---|---|
 | POST | `/api/employees/import` | CSV upload, returns a per-row report |
 | GET | `/api/employees/export` | CSV of the current filters |
 | POST | `/api/salary-adjustments/preview` | Bulk raise preview |
 | POST | `/api/salary-adjustments` | Bulk raise apply |
-| GET | `/health` | Liveness, never touches the DB |
 
 ## Trade-offs
 
@@ -89,7 +103,10 @@ erDiagram
 | Prod database | Neon Postgres | SQLite on Render | Render's free disk is wiped on restart. Edits must persist. |
 | Salary changes | One service method for every change | Direct field writes | If HR wants history, it is added in one place. Bulk raise and edit share the same path. |
 | Delete | Archive with `archived_at` | Hard delete | Records are never lost. Insights skip archived rows. |
-| Filtering UI | Own filter bar sending query params | DataGrid filter panel | The free DataGrid allows one filter at a time. Filters stay server-side and testable. |
+| Employee table | MUI table with server paging, sorting and own filter bar | MUI DataGrid | The free DataGrid allows one filter at a time and its virtual rows do not render in jsdom tests. A page is at most 100 rows, so a plain table is enough. |
+| API types | Written by hand, mirroring the Pydantic schemas | Generated with `openapi-typescript` | The generator does not support TypeScript 6 yet. The API is small, and the frontend tests run against the same JSON shapes. |
+| Migrations | Run by the start command before the server starts | Render pre-deploy step | Pre-deploy commands are a paid Render feature. Alembic skips work when the schema is current. |
+| Distribution buckets | `CASE` sums in one query | `floor()` per row | Some SQLite builds lack math functions. `CASE` works the same on SQLite and Postgres. |
 | Auth | None | Login and roles | One trusted user is assumed. Pending HR's answer. |
 | Cold starts | External pinger hitting `/health` every 10 minutes | Paid always-on plan | Free hosting without a 30 second wake-up. `/health` skips the DB so Neon can still sleep. |
 
@@ -99,5 +116,21 @@ erDiagram
 - **Insights are SQL aggregates.** `GROUP BY` on indexed columns. The browser receives a few dozen numbers, not rows.
 - **Search** uses a case-insensitive `LIKE` on name and email. At 10,000 rows this is fast without full-text search.
 - **Seeding** uses batched bulk inserts and a fixed random seed. 10,000 rows load in seconds and every run produces the same data.
-- **Import** validates the whole file first, then writes valid rows in batches inside one transaction.
-- Timings for list, insights and seed will be measured and recorded here once built.
+- **Import (planned)** will validate the whole file first, then write valid rows in batches inside one transaction.
+- **The insights page loads its charts only when opened.** The main bundle is about 190 kB gzipped and the insights chunk about 95 kB.
+
+### Measured on 10,000 seeded employees
+
+SQLite on a laptop, average of five runs after one warm-up.
+
+| Operation | Time |
+|---|---|
+| Seed 10,000 employees | 0.24 s |
+| Pay by country | 10 ms |
+| Pay by job title in one country | 2 ms |
+| Org summary | 4 ms |
+| Distribution, whole org in USD | 13 ms |
+| Distribution, one country | 4 ms |
+| List, first page | 4 ms |
+| List, search plus sort by salary | 15 ms |
+| List, page 400 | 20 ms |
