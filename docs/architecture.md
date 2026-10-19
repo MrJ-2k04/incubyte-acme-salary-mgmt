@@ -20,7 +20,20 @@ One repo with two apps: `backend/` and `frontend/`. They share nothing except th
 | `develop` | Day-to-day work, default branch | Every push | Vercel preview |
 | `production` | Live app, changed only by pull request from `develop` | Every push and PR | Render (API) and Vercel (UI) |
 
-CI has three jobs: backend lint and tests on SQLite, the same tests plus migrations on a real Postgres container, and frontend lint, type check, tests and build.
+One GitHub Actions pipeline runs on every push and pull request:
+
+```mermaid
+flowchart LR
+    B[Backend tests<br/>SQLite] --> D
+    P[Backend tests and migrations<br/>Postgres] --> D
+    F[Frontend lint, types,<br/>tests, build] --> D
+    D[Deploy API to Render<br/>wait until live] --> U[Deploy UI to Vercel] --> S[Smoke test<br/>live API and site]
+```
+
+- **Tests run on every branch.** The deploy jobs run only on `production`, and only when all three test jobs pass.
+- **The pipeline is the only way to production.** Render auto-deploy is off, and Vercel skips Git deploys for `production`. `develop` still gets Vercel preview deploys.
+- **The API deploys before the UI,** so a new screen never calls an endpoint that is not live yet.
+- **Releases never overlap.** A concurrency group queues production runs and never cancels one halfway.
 
 ## Backend layers
 
