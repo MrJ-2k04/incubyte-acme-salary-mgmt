@@ -10,6 +10,8 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 }
 
+Element.prototype.scrollIntoView ??= () => {}
+
 // jsdom has no media queries, and the theme reads the system colour scheme through one.
 globalThis.matchMedia ??= (query: string) =>
   ({

@@ -10,6 +10,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS, ROUTE } from '../routes'
+import { TOUR_TARGET } from '../tour/steps'
 import ThemeModeSwitch from './ThemeModeSwitch'
 
 export const SIDEBAR_WIDTH = 248
@@ -63,7 +64,7 @@ export default function Sidebar({ mobile, open, onClose }: Props) {
           </Typography>
         </Box>
 
-        <Box component="nav" aria-label="Main" sx={{ px: 1.5, py: 2 }}>
+        <Box component="nav" aria-label="Main" data-tour={TOUR_TARGET.nav} sx={{ px: 1.5, py: 2 }}>
           <Typography
             variant="overline"
             sx={{ px: 1.5, color: 'text.disabled', fontWeight: 600, letterSpacing: '0.08em' }}
@@ -110,7 +111,11 @@ export default function Sidebar({ mobile, open, onClose }: Props) {
         </Box>
 
         <Box sx={{ mt: 'auto', p: 1.5, borderTop: 1, borderColor: 'divider', display: 'grid', gap: 1.5 }}>
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
+          <Stack
+            direction="row"
+            data-tour={TOUR_TARGET.theme}
+            sx={{ alignItems: 'center', justifyContent: 'space-between', px: 1, borderRadius: 2 }}
+          >
             <Typography variant="body2" color="text.secondary">
               Theme
             </Typography>

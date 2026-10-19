@@ -26,6 +26,7 @@ import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCompactMoney, formatCount, formatMoney } from '../format'
 import { employeesLink } from '../routes'
+import { TOUR_TARGET } from '../tour/steps'
 
 const REPORTING_CURRENCY = 'USD'
 const CHART_HEIGHT = 300
@@ -99,15 +100,17 @@ function Section({
   title,
   description,
   action,
+  tour,
   children,
 }: {
   title: string
   description?: string
   action?: ReactNode
+  tour?: string
   children: ReactNode
 }) {
   return (
-    <Surface>
+    <Surface data-tour={tour}>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         sx={{ p: 2.5, alignItems: { sm: 'center' }, justifyContent: 'space-between', gap: 2 }}
@@ -161,7 +164,7 @@ export default function DashboardPage() {
 
       {error && <Alert severity="error">{error.message}</Alert>}
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2} data-tour={TOUR_TARGET.stats}>
         <Grid size={{ xs: 6, md: 3 }}>
           <Stat
             label="Active employees"
@@ -193,7 +196,11 @@ export default function DashboardPage() {
         </Grid>
       </Grid>
 
-      <Section title="Pay by country" description="Average salary in USD. Select a bar or a country to see its people.">
+      <Section
+        title="Pay by country"
+        description="Average salary in USD. Select a bar or a country to see its people."
+        tour={TOUR_TARGET.countries}
+      >
         {countries.data && countries.data.length > 0 && (
           <Box sx={{ px: 1, '& .MuiBarElement-root': ROW_LINK }}>
             <BarChart
