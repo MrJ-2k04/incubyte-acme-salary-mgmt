@@ -11,10 +11,14 @@ from app.employees.schemas import (
     EmployeeRead,
     EmployeeUpdate,
     ImportReport,
+    RaisePreview,
+    RaiseResult,
+    SalaryAdjustment,
 )
 from app.employees.service import EmployeeService
 
 EMPLOYEES_PATH = "/api/employees"
+ADJUSTMENTS_PATH = "/api/salary-adjustments"
 CSV_MEDIA_TYPE = "text/csv"
 EXPORT_FILENAME = "employees.csv"
 
@@ -70,3 +74,16 @@ def archive_employee(service: Service, employee_id: int):
 @router.post("/{employee_id}/restore", response_model=EmployeeRead)
 def restore_employee(service: Service, employee_id: int):
     return service.restore(employee_id)
+
+
+adjustments_router = APIRouter(prefix=ADJUSTMENTS_PATH, tags=["salary adjustments"])
+
+
+@adjustments_router.post("/preview", response_model=RaisePreview)
+def preview_raise(service: Service, adjustment: SalaryAdjustment):
+    return service.preview_raise(adjustment)
+
+
+@adjustments_router.post("", response_model=RaiseResult)
+def apply_raise(service: Service, adjustment: SalaryAdjustment):
+    return RaiseResult(updated=service.raise_salaries(adjustment))

@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.employees.csv_io import InvalidCsvError
+from app.employees.router import adjustments_router
 from app.employees.router import router as employees_router
 from app.employees.service import (
     DuplicateEmailError,
@@ -30,6 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(employees_router)
+app.include_router(adjustments_router)
 app.include_router(insights_router)
 app.include_router(reference_router)
 

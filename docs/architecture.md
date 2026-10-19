@@ -85,16 +85,13 @@ erDiagram
 | GET | `/api/reference` | Countries, departments and the job titles in use per department |
 | POST | `/api/employees/import` | CSV upload, returns a per-row report |
 | GET | `/api/employees/export` | CSV of the current filters and sort |
+| POST | `/api/salary-adjustments/preview` | Headcount, USD payroll before and after, and example rows for a raise |
+| POST | `/api/salary-adjustments` | Apply a percentage raise or cut to the active employees matching the filters |
 | GET | `/health` | Liveness, never touches the DB |
 
 **CSV import rules.** Columns are matched by name, so their order does not matter and extra columns are ignored. A file missing a required column is refused whole. Otherwise every valid row is added and each bad row is reported with its line number and reason. Imported employees are active. An exported file can be imported again.
 
-Planned for the "should have" features, not built yet:
-
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/api/salary-adjustments/preview` | Bulk raise preview |
-| POST | `/api/salary-adjustments` | Bulk raise apply |
+**Pay change rules.** The change is a percentage between -50% and 100%, applied to active employees only. New salaries are rounded to whole units, the same way they are stored. The preview and the change use the same filters as the employee list.
 
 ## Trade-offs
 
@@ -105,7 +102,7 @@ Planned for the "should have" features, not built yet:
 | Exchange rates | Fixed rates in the `country` table | Live FX API | Stable reports, repeatable tests, no network dependency. Rates convert only at report time, so stored salaries never change. |
 | Test database | In-memory SQLite, plus a CI job on Postgres | Postgres everywhere | Unit tests stay in milliseconds. The Postgres job catches dialect gaps before deploy. |
 | Prod database | Neon Postgres | SQLite on Render | Render's free disk is wiped on restart. Edits must persist. |
-| Salary changes | One service method for every change | Direct field writes | If HR wants history, it is added in one place. Bulk raise and edit share the same path. |
+| Salary changes | Two service methods: one person, or one SQL `UPDATE` for a group | Writing salaries anywhere | If HR wants history, it is added in two known places. A group change row by row would cost a network trip per person on Neon. |
 | Delete | Archive with `archived_at` | Hard delete | Records are never lost. Insights skip archived rows. |
 | Employee table | MUI table with server paging, sorting and own filter bar | MUI DataGrid | The free DataGrid allows one filter at a time and its virtual rows do not render in jsdom tests. A page is at most 100 rows, so a plain table is enough. |
 | API types | Written by hand, mirroring the Pydantic schemas | Generated with `openapi-typescript` | The generator does not support TypeScript 6 yet. The API is small, and the frontend tests run against the same JSON shapes. |

@@ -49,7 +49,7 @@ Employees who leave are archived, not deleted, and are left out of insights.
 | Left out | Reason |
 |---|---|
 | Logins and roles | One trusted user is assumed. It can be added as a layer around the API if HR says otherwise. |
-| Salary history | Assumed not needed. Every salary change goes through one place in the code, so history can be added there without a rewrite. |
+| Salary history | Assumed not needed. Pay changes in only two places in the code, so history can be added there without a rewrite. |
 | Live exchange rates | Fixed rates keep reports stable and tests repeatable. Swapping in a live source changes one component. |
 | Payroll, payslips and tax | That is a separate product. The problem is managing salary data, not paying it. |
 | Bonus, equity and allowances | Base salary is what the problem describes. More pay parts can be added as new fields. |

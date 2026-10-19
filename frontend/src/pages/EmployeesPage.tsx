@@ -5,6 +5,7 @@ import EditOutlined from '@mui/icons-material/EditOutlined'
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
 import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import UnarchiveOutlined from '@mui/icons-material/UnarchiveOutlined'
 import UploadRounded from '@mui/icons-material/UploadRounded'
 import Alert from '@mui/material/Alert'
@@ -40,6 +41,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import EmployeeDialog from '../components/EmployeeDialog'
 import ImportResult from '../components/ImportResult'
 import PageHeader from '../components/PageHeader'
+import RaiseDialog from '../components/RaiseDialog'
 import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCount, formatDate, formatMoney } from '../format'
@@ -96,6 +98,8 @@ export default function EmployeesPage() {
   const [editing, setEditing] = useState<Editing>()
   const [lastChange, setLastChange] = useState<ArchiveChange>()
   const [confirmingArchive, setConfirmingArchive] = useState<Employee>()
+  const [adjustingPay, setAdjustingPay] = useState(false)
+  const [payChange, setPayChange] = useState<string>()
   // The box keeps its own text, so typing never waits on the address bar or the API.
   const [search, setSearch] = useState(() => params.get('q') ?? '')
   const searchTimer = useRef<number>(undefined)
@@ -175,7 +179,7 @@ export default function EmployeesPage() {
     <Stack spacing={3}>
       <PageHeader
         title="Employees"
-        actionsTour={TOUR_TARGET.csv}
+        actionsTour={TOUR_TARGET.actions}
         subtitle={
           activeCount === undefined || archivedCount === undefined
             ? 'Loading people…'
@@ -212,6 +216,15 @@ export default function EmployeesPage() {
             >
               Export CSV
             </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<TrendingUpRounded />}
+              onClick={() => setAdjustingPay(true)}
+              sx={{ borderColor: 'divider' }}
+            >
+              Adjust pay
+            </Button>
             <Button variant="contained" startIcon={<AddRounded />} onClick={() => setEditing(null)}>
               Add employee
             </Button>
@@ -232,7 +245,6 @@ export default function EmployeesPage() {
           <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, zIndex: 3 }} />
         )}
         <Tabs
-          data-tour={TOUR_TARGET.statusViews}
           value={status}
           onChange={(_, next: EmployeeStatus) => filter(STATUS_PARAM)(next === EMPLOYEE_STATUS.active ? '' : next)}
           sx={{ px: 2, borderBottom: 1, borderColor: 'divider', minHeight: 48 }}
@@ -314,7 +326,7 @@ export default function EmployeesPage() {
           />
         </Stack>
 
-        <TableContainer>
+        <TableContainer data-tour={TOUR_TARGET.table}>
           <Table>
             <TableHead>
               <TableRow>
@@ -533,6 +545,26 @@ export default function EmployeesPage() {
           </Button>
         }
       />
+
+      <Snackbar
+        open={Boolean(payChange)}
+        autoHideDuration={UNDO_SECONDS * 1000}
+        onClose={(_, reason) => reason !== 'clickaway' && setPayChange(undefined)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        message={payChange}
+      />
+
+      {adjustingPay && (
+        <RaiseDialog
+          filters={filters}
+          countryName={(code) => countryName.get(code)}
+          onClose={() => setAdjustingPay(false)}
+          onApplied={(updated, percent) => {
+            setAdjustingPay(false)
+            setPayChange(`Changed pay for ${formatCount(updated)} employees by ${percent}%`)
+          }}
+        />
+      )}
 
       {confirmingArchive && (
         <ConfirmDialog

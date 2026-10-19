@@ -155,3 +155,22 @@ Agent mistakes caught by tooling:
 
 Agent mistakes caught by tooling:
 - The delayed search used the address from the render that started the timer, which wiped a country picked in between. An existing filter test failed, and the agent made the timer use the latest address.
+
+### 11. CI/CD that deploys only tested code
+
+> I would still like to configure "after ci checks pass" if that's possible. So that all the 3 items are tested first before being deployed.
+
+**Outcome:** a release is now one merge from `develop` into `production`, with no manual step. It took several rounds to get there:
+- **Actions never started on push.** The agent showed that GitHub recorded the pushes but created no runs. The cause was Actions not enabled for the repo, which I fixed in the browser.
+- **Render never received push events,** even after the service was recreated in the dashboard. The agent first built a full deploy pipeline in Actions. I pushed back and asked for platform triggers like another project of mine. When those still failed, I chose a middle path: Render's auto-deploy is off, and a CI job calls Render's deploy hook once all checks pass.
+- **Vercel** deploys from Git, and Deployment Checks keep the live domain on the old version until the same checks pass. The agent found the right check format in Vercel's API docs after the CLI rejected its guesses.
+- **Branch protection** on `production` requires the three checks before a merge.
+
+### 12. Bulk pay changes, realistic seed data and the tour
+
+> Implement the bulk actions as well as seed polish. Another thing I noticed is that the archived portion is being highlighted in tour, but since its a product, focus should be on the employee table first.
+
+**Outcome:**
+- **Pay changes for a group.** HR picks a percentage, sees the headcount, the USD payroll before and after, and example rows, then applies it. Only active employees change. It is one SQL `UPDATE`, so raising all 9,692 active employees took 36 ms locally.
+- **Seed names.** Names now come from regional pools that fit each country, and all 10,000 are unique. The agent measured people per region against name combinations to size the pools, and removed names that two regions shared.
+- **Tour.** The employees part now starts with the table, then search, then the pay and data actions. The separate archived step is folded into the table step.

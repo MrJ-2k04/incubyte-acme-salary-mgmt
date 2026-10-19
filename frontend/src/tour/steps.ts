@@ -6,9 +6,9 @@ export const TOUR_TARGET = {
   nav: 'nav',
   stats: 'stats',
   countries: 'countries',
-  statusViews: 'status-views',
+  table: 'employee-table',
   filters: 'filters',
-  csv: 'csv',
+  actions: 'employee-actions',
   account: 'account',
 } as const
 
@@ -44,10 +44,10 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Select any country, bar or job title to open the people behind it.',
   },
   {
-    target: TOUR_TARGET.statusViews,
+    target: TOUR_TARGET.table,
     route: ROUTE.employees,
-    title: 'Active, archived or everyone',
-    body: 'People who leave are archived, not deleted. Switch views to find them, and restore anyone in one click.',
+    title: 'Every employee in one place',
+    body: 'Pay shows in each person’s own currency. Sort by any column, edit anyone, and archive people who leave. Archived records are kept one tab away.',
   },
   {
     target: TOUR_TARGET.filters,
@@ -56,10 +56,10 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Search by name or email, then narrow by country, job title or department.',
   },
   {
-    target: TOUR_TARGET.csv,
+    target: TOUR_TARGET.actions,
     route: ROUTE.employees,
-    title: 'Bring data in and out',
-    body: 'Import a CSV to add people in bulk, or export exactly the list you are looking at.',
+    title: 'Change pay and move data',
+    body: 'Adjust pay raises or cuts pay for everyone matching your filters, with a preview first. Import a CSV to add people in bulk, or export the list you are looking at.',
   },
   {
     target: TOUR_TARGET.account,

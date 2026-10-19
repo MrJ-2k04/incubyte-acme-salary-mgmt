@@ -83,3 +83,18 @@ export type ImportReport = {
   imported: number
   rejected: { line: number; errors: string[] }[]
 }
+
+export type SalaryAdjustment = {
+  percent: number
+  q?: string
+  country?: string
+  job_title?: string
+  department?: string
+}
+
+export type RaisePreview = {
+  headcount: number
+  payroll_before_usd: number
+  payroll_after_usd: number
+  sample: { full_name: string; currency: string; salary: number; new_salary: number }[]
+}

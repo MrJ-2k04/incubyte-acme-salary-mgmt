@@ -277,4 +277,59 @@ describe('EmployeesPage', () => {
 
     expect(await screen.findByText('Missing columns: salary')).toBeInTheDocument()
   })
+
+  it('previews and applies a pay change to the filtered group', async () => {
+    const user = userEvent.setup()
+    let previewed: unknown
+    let applied: unknown
+    server.use(
+      http.post(url(API_PATH.raisePreview), async ({ request }) => {
+        previewed = await request.json()
+        return HttpResponse.json({
+          headcount: 2,
+          payroll_before_usd: 60000,
+          payroll_after_usd: 66000,
+          sample: [{ full_name: 'Asha Rao', currency: 'INR', salary: 2000000, new_salary: 2200000 }],
+        })
+      }),
+      http.post(url(API_PATH.raise), async ({ request }) => {
+        applied = await request.json()
+        return HttpResponse.json({ updated: 2 })
+      }),
+    )
+    renderWithProviders(<EmployeesPage />, { route: '/employees?country=IN' })
+
+    await user.click(await screen.findByRole('button', { name: 'Adjust pay' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('button', { name: /^Apply/ })).toBeDisabled()
+    await user.type(within(dialog).getByLabelText(/^Change/), '10')
+
+    expect(await within(dialog).findByText('2 active employees')).toBeInTheDocument()
+    expect(within(dialog).getByText('$60,000 → $66,000')).toBeInTheDocument()
+    expect(within(dialog).getByText('₹2,200,000')).toBeInTheDocument()
+    expect(previewed).toEqual({ percent: 10, country: 'IN' })
+
+    await user.click(within(dialog).getByRole('button', { name: 'Apply to 2 employees' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(applied).toEqual({ percent: 10, country: 'IN' })
+    expect(await screen.findByText('Changed pay for 2 employees by 10%')).toBeInTheDocument()
+  })
+
+  it('does not offer a pay change when nobody matches', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(url(API_PATH.raisePreview), () =>
+        HttpResponse.json({ headcount: 0, payroll_before_usd: 0, payroll_after_usd: 0, sample: [] }),
+      ),
+    )
+    renderWithProviders(<EmployeesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Adjust pay' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByLabelText(/^Change/), '5')
+
+    expect(await within(dialog).findByText('No active employees match these filters.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: /^Apply/ })).toBeDisabled()
+  })
 })

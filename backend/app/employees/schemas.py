@@ -97,3 +97,39 @@ class RowError(BaseModel):
 class ImportReport(BaseModel):
     imported: int
     rejected: list[RowError]
+
+
+class SalaryAdjustment(BaseModel):
+    # A bigger swing is far more likely a typo than a real pay decision.
+    percent: float = Field(ge=-50, le=100)
+    q: str | None = None
+    country: str | None = None
+    job_title: str | None = None
+    department: Department | None = None
+
+    def query(self) -> EmployeeQuery:
+        # Only people still on payroll get a raise.
+        filters = self.model_dump(exclude={"percent"})
+        return EmployeeQuery(**filters, status=EmployeeStatus.ACTIVE)
+
+    @property
+    def factor(self) -> float:
+        return 1 + self.percent / 100
+
+
+class RaiseSample(BaseModel):
+    full_name: str
+    currency: str
+    salary: int
+    new_salary: int
+
+
+class RaisePreview(BaseModel):
+    headcount: int
+    payroll_before_usd: int
+    payroll_after_usd: int
+    sample: list[RaiseSample]
+
+
+class RaiseResult(BaseModel):
+    updated: int

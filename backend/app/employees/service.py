@@ -13,9 +13,14 @@ from app.employees.schemas import (
     EmployeeRead,
     EmployeeUpdate,
     ImportReport,
+    RaisePreview,
+    RaiseSample,
     RowError,
+    SalaryAdjustment,
 )
 from app.models import Country, Employee
+
+RAISE_SAMPLE_SIZE = 5
 
 
 class EmployeeNotFoundError(Exception):
@@ -74,9 +79,24 @@ class EmployeeService:
             setattr(employee, field, value)
         return self.repository.save(employee)
 
-    # The only place a salary changes, so history can be added here if HR needs it.
+    # This and raise_salaries are the only places pay changes, so history can be added here.
     def change_salary(self, employee: Employee, salary: int) -> None:
         employee.salary = salary
+
+    # One UPDATE for the whole group. Row by row would cost a network trip each on a remote DB.
+    def raise_salaries(self, adjustment: SalaryAdjustment) -> int:
+        return self.repository.raise_salaries(adjustment.query(), adjustment.factor)
+
+    def preview_raise(self, adjustment: SalaryAdjustment) -> RaisePreview:
+        query, factor = adjustment.query(), adjustment.factor
+        summary = self.repository.raise_summary(query, factor)
+        sample = self.repository.raise_sample(query, factor, RAISE_SAMPLE_SIZE)
+        return RaisePreview(
+            headcount=summary.headcount,
+            payroll_before_usd=round(summary.before_usd or 0),
+            payroll_after_usd=round(summary.after_usd or 0),
+            sample=[RaiseSample.model_validate(row._mapping) for row in sample],
+        )
 
     def archive(self, employee_id: int) -> Employee:
         employee = self.get(employee_id)

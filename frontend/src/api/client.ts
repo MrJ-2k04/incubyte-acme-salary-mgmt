@@ -9,6 +9,8 @@ export const API_PATH = {
   archive: (id: number) => `/api/employees/${id}/archive`,
   restore: (id: number) => `/api/employees/${id}/restore`,
   reference: '/api/reference',
+  raisePreview: '/api/salary-adjustments/preview',
+  raise: '/api/salary-adjustments',
   insightsCountries: '/api/insights/countries',
   insightsJobTitles: (code: string) => `/api/insights/countries/${code}/job-titles`,
   insightsSummary: '/api/insights/summary',
