@@ -4,7 +4,8 @@ import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import Stack from '@mui/material/Stack'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import { type FormEvent, useState } from 'react'
 import { useSaveEmployee } from '../api/hooks'
@@ -57,14 +58,22 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
       <form onSubmit={submit}>
-        <DialogTitle>{employee ? 'Edit employee' : 'Add employee'}</DialogTitle>
+        <DialogTitle sx={{ pb: 0.5 }}>{employee ? 'Edit employee' : 'Add employee'}</DialogTitle>
+        <Typography variant="body2" color="text.secondary" sx={{ px: 3 }}>
+          {employee ? `Update details for ${employee.full_name}.` : 'Add a new person to the payroll.'}
+        </Typography>
         <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            {save.error && <Alert severity="error">{save.error.message}</Alert>}
+          {save.error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {save.error.message}
+            </Alert>
+          )}
+          <Box sx={{ display: 'grid', gap: 2, pt: 1, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
             <TextField
               id="full-name"
               label="Full name"
               size="small"
+              sx={{ gridColumn: '1 / -1' }}
               required
               value={form.full_name}
               onChange={(e) => set('full_name')(e.target.value)}
@@ -74,6 +83,7 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
               label="Email"
               type="email"
               size="small"
+              sx={{ gridColumn: '1 / -1' }}
               required
               value={form.email}
               onChange={(e) => set('email')(e.target.value)}
@@ -100,6 +110,7 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
               id="country"
               label="Country"
               required
+              sx={{ gridColumn: '1 / -1' }}
               value={form.country_code}
               emptyLabel=""
               options={reference.countries.map((c) => ({ value: c.code, label: `${c.name} (${c.currency})` }))}
@@ -126,10 +137,12 @@ export default function EmployeeDialog({ employee, reference, onClose }: Props) 
               onChange={(e) => set('hired_on')(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
             />
-          </Stack>
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={onClose} color="inherit">
+            Cancel
+          </Button>
           <Button type="submit" variant="contained" loading={save.isPending}>
             Save
           </Button>
