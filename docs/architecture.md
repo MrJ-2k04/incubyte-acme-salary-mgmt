@@ -70,7 +70,7 @@ erDiagram
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/employees` | Paged list with `q`, `country`, `job_title`, `department`, `sort`, `page`, `size` |
+| GET | `/api/employees` | Paged list with `q`, `country`, `job_title`, `department`, `status`, `sort`, `page`, `size` |
 | POST | `/api/employees` | Create |
 | GET | `/api/employees/{id}` | Read one |
 | PATCH | `/api/employees/{id}` | Edit |

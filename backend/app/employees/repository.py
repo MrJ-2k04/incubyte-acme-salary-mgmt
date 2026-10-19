@@ -1,7 +1,7 @@
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.employees.schemas import EmployeeQuery, SortOrder
+from app.employees.schemas import EmployeeQuery, EmployeeStatus, SortOrder
 from app.models import Country, Employee
 
 
@@ -62,8 +62,10 @@ class EmployeeRepository:
         return self._filtered(select(Employee), query).order_by(ordering, Employee.id)
 
     def _filtered(self, statement: Select, query: EmployeeQuery) -> Select:
-        if not query.include_archived:
+        if query.status == EmployeeStatus.ACTIVE:
             statement = statement.where(Employee.archived_at.is_(None))
+        if query.status == EmployeeStatus.ARCHIVED:
+            statement = statement.where(Employee.archived_at.is_not(None))
         if query.country:
             statement = statement.where(Employee.country_code == query.country)
         if query.job_title:

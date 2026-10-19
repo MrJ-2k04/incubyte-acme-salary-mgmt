@@ -24,12 +24,16 @@ export type EmployeePage = {
 
 export type SortOrder = 'asc' | 'desc'
 
+export const EMPLOYEE_STATUS = { active: 'active', archived: 'archived', all: 'all' } as const
+
+export type EmployeeStatus = (typeof EMPLOYEE_STATUS)[keyof typeof EMPLOYEE_STATUS]
+
 export type EmployeeQuery = {
   q?: string
   country?: string
   job_title?: string
   department?: string
-  include_archived?: boolean
+  status?: EmployeeStatus
   sort?: keyof Employee
   order?: SortOrder
   page?: number

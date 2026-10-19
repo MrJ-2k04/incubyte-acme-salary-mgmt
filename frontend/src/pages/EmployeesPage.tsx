@@ -33,7 +33,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { API_PATH, buildUrl } from '../api/client'
 import { useEmployees, useImportEmployees, useReference, useSetArchived } from '../api/hooks'
-import type { Employee, SortOrder } from '../api/types'
+import { EMPLOYEE_STATUS, type Employee, type SortOrder } from '../api/types'
 import EmployeeDialog from '../components/EmployeeDialog'
 import ImportResult from '../components/ImportResult'
 import PageHeader from '../components/PageHeader'
@@ -84,7 +84,7 @@ export default function EmployeesPage() {
   const filters: EmployeeFilters = Object.fromEntries(
     EMPLOYEE_FILTERS.flatMap((key) => (params.get(key) ? [[key, params.get(key)]] : [])),
   )
-  const query = { ...filters, include_archived: includeArchived }
+  const query = { ...filters, status: includeArchived ? EMPLOYEE_STATUS.all : EMPLOYEE_STATUS.active }
   const employees = useEmployees({ ...query, sort, order, page: page + 1, size })
   const reference = useReference()
   const setArchived = useSetArchived()
