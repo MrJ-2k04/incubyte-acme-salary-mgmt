@@ -1,28 +1,24 @@
-import { alpha, createTheme } from '@mui/material/styles'
+import { createTheme } from '@mui/material/styles'
+import { ACTIVE_PALETTE, type SchemeTokens } from './palettes'
 
 const FONT = '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
 
-const PRIMARY = { light: '#4f46e5', dark: '#818cf8' }
+function schemePalette(tokens: SchemeTokens) {
+  return {
+    palette: {
+      primary: { main: tokens.primary },
+      background: { default: tokens.background, paper: tokens.surface },
+      text: { primary: tokens.text, secondary: tokens.textMuted },
+      divider: tokens.border,
+    },
+  }
+}
 
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: 'class' },
   colorSchemes: {
-    light: {
-      palette: {
-        primary: { main: PRIMARY.light },
-        background: { default: '#fafafa', paper: '#ffffff' },
-        text: { primary: '#18181b', secondary: '#71717a' },
-        divider: '#e4e4e7',
-      },
-    },
-    dark: {
-      palette: {
-        primary: { main: PRIMARY.dark },
-        background: { default: '#09090b', paper: '#111113' },
-        text: { primary: '#fafafa', secondary: '#a1a1aa' },
-        divider: '#27272a',
-      },
-    },
+    light: schemePalette(ACTIVE_PALETTE.light),
+    dark: schemePalette(ACTIVE_PALETTE.dark),
   },
   shape: { borderRadius: 10 },
   typography: {
@@ -76,10 +72,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: ({ theme }) => ({
           '&:last-child td': { borderBottom: 0 },
-          '&.MuiTableRow-hover:hover': { backgroundColor: alpha(PRIMARY.light, 0.04) },
-          ...theme.applyStyles('dark', {
-            '&.MuiTableRow-hover:hover': { backgroundColor: alpha(PRIMARY.dark, 0.06) },
-          }),
+          '&.MuiTableRow-hover:hover': { backgroundColor: `rgba(${theme.vars.palette.primary.mainChannel} / 0.05)` },
         }),
       },
     },

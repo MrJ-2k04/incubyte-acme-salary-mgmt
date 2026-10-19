@@ -39,6 +39,7 @@ import PageHeader from '../components/PageHeader'
 import SelectField from '../components/SelectField'
 import Surface from '../components/Surface'
 import { formatCount, formatDate, formatMoney } from '../format'
+import { accentFor, softTone } from '../theme/tone'
 
 const PAGE_SIZES = [25, 50, 100]
 const SKELETON_ROWS = 8
@@ -70,14 +71,6 @@ function initials(name: string): string {
     .toUpperCase()
 }
 
-// A stable hue per employee keeps avatars colourful without storing anything.
-function avatarHue(id: number): number {
-  return (id * 47) % 360
-}
-
-function textHue(text: string): number {
-  return [...text].reduce((sum, char) => sum + char.charCodeAt(0) * 31, 0) % 360
-}
 
 export default function EmployeesPage() {
   const [filters, setFilters] = useState<Filters>({})
@@ -282,18 +275,10 @@ export default function EmployeesPage() {
                     <TableCell>
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', opacity: archived ? 0.55 : 1 }}>
                         <Avatar
-                          sx={(theme) => ({
-                            width: 34,
-                            height: 34,
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: `hsl(${avatarHue(employee.id)} 60% 35%)`,
-                            bgcolor: `hsl(${avatarHue(employee.id)} 80% 92%)`,
-                            ...theme.applyStyles('dark', {
-                              color: `hsl(${avatarHue(employee.id)} 80% 80%)`,
-                              bgcolor: `hsl(${avatarHue(employee.id)} 40% 20%)`,
-                            }),
-                          })}
+                          sx={[
+                            { width: 34, height: 34, fontSize: 13, fontWeight: 600 },
+                            softTone(accentFor(employee.id)),
+                          ]}
                         >
                           {initials(employee.full_name)}
                         </Avatar>
@@ -315,16 +300,7 @@ export default function EmployeesPage() {
                       <Chip
                         label={employee.department}
                         size="small"
-                        sx={(theme) => ({
-                          height: 24,
-                          fontSize: 12,
-                          color: `hsl(${textHue(employee.department)} 60% 36%)`,
-                          bgcolor: `hsl(${textHue(employee.department)} 85% 95%)`,
-                          ...theme.applyStyles('dark', {
-                            color: `hsl(${textHue(employee.department)} 80% 76%)`,
-                            bgcolor: `hsl(${textHue(employee.department)} 40% 17%)`,
-                          }),
-                        })}
+                        sx={[{ height: 24, fontSize: 12 }, softTone(accentFor(employee.department))]}
                       />
                     </TableCell>
                     <TableCell sx={{ opacity: archived ? 0.55 : 1 }}>

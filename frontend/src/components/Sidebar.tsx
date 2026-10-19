@@ -38,9 +38,10 @@ export default function Sidebar({ mobile, open, onClose }: Props) {
               borderRadius: 2,
               display: 'grid',
               placeItems: 'center',
-              color: '#fff',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              boxShadow: '0 4px 12px rgb(99 102 241 / 0.35)',
+              color: 'primary.contrastText',
+              background:
+                'linear-gradient(135deg, var(--mui-palette-primary-light) 0%, var(--mui-palette-primary-dark) 100%)',
+              boxShadow: '0 4px 12px rgba(var(--mui-palette-primary-mainChannel) / 0.35)',
             }}
           >
             <PaymentsOutlined sx={{ fontSize: 18 }} />
