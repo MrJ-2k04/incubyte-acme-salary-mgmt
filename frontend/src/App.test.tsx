@@ -12,20 +12,23 @@ beforeEach(() => {
 })
 
 describe('App', () => {
-  it('shows the product name and a sidebar linking to both screens', () => {
+  it('shows the product name and a sidebar with the dashboard first', () => {
     renderWithProviders(<App />)
 
     expect(screen.getByRole('heading', { name: 'ACME Salary Management' })).toBeInTheDocument()
-    const sidebar = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(sidebar).getByRole('link', { name: 'Employees' })).toHaveAttribute('href', '/')
-    expect(within(sidebar).getByRole('link', { name: 'Insights' })).toHaveAttribute('href', '/insights')
+    const links = within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole('link')
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['Dashboard', '/'],
+      ['Employees', '/employees'],
+    ])
   })
 
-  it('marks the current screen in the sidebar', () => {
-    renderWithProviders(<App />, { route: '/insights' })
+  it('opens on the dashboard and marks it in the sidebar', async () => {
+    renderWithProviders(<App />)
 
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
     const sidebar = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(sidebar).getByRole('link', { name: 'Insights' })).toHaveAttribute('aria-current', 'page')
+    expect(within(sidebar).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
     expect(within(sidebar).getByRole('link', { name: 'Employees' })).not.toHaveAttribute('aria-current')
   })
 
