@@ -38,17 +38,28 @@ class EmployeeRepository:
         return self.session.scalar(query) is not None
 
     def search(self, query: EmployeeQuery) -> tuple[list[Employee], int]:
-        filtered = self._filtered(select(Employee), query)
         total = self.session.scalar(self._filtered(select(func.count(Employee.id)), query))
+        rows = self.session.scalars(
+            self._ordered(query).offset((query.page - 1) * query.size).limit(query.size)
+        )
+        return list(rows), total
+
+    def search_all(self, query: EmployeeQuery) -> list[Employee]:
+        return list(self.session.scalars(self._ordered(query)))
+
+    def add_all(self, employees: list[Employee]) -> None:
+        self.session.add_all(employees)
+        self.session.commit()
+
+    def existing_emails(self, emails: set[str]) -> set[str]:
+        query = select(func.lower(Employee.email)).where(func.lower(Employee.email).in_(emails))
+        return set(self.session.scalars(query))
+
+    def _ordered(self, query: EmployeeQuery) -> Select:
         column = getattr(Employee, query.sort)
         ordering = column.desc() if query.order == SortOrder.DESC else column.asc()
         # Id breaks ties so paging never repeats or skips a row.
-        rows = self.session.scalars(
-            filtered.order_by(ordering, Employee.id)
-            .offset((query.page - 1) * query.size)
-            .limit(query.size)
-        )
-        return list(rows), total
+        return self._filtered(select(Employee), query).order_by(ordering, Employee.id)
 
     def _filtered(self, statement: Select, query: EmployeeQuery) -> Select:
         if not query.include_archived:

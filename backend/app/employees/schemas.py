@@ -81,3 +81,13 @@ class EmployeePage(BaseModel):
     total: int
     page: int
     size: int
+
+
+class RowError(BaseModel):
+    line: int
+    errors: list[str]
+
+
+class ImportReport(BaseModel):
+    imported: int
+    rejected: list[RowError]

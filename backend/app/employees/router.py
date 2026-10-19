@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.db import get_session
@@ -10,10 +10,13 @@ from app.employees.schemas import (
     EmployeeQuery,
     EmployeeRead,
     EmployeeUpdate,
+    ImportReport,
 )
 from app.employees.service import EmployeeService
 
 EMPLOYEES_PATH = "/api/employees"
+CSV_MEDIA_TYPE = "text/csv"
+EXPORT_FILENAME = "employees.csv"
 
 router = APIRouter(prefix=EMPLOYEES_PATH, tags=["employees"])
 
@@ -28,6 +31,20 @@ Service = Annotated[EmployeeService, Depends(get_service)]
 @router.get("", response_model=EmployeePage)
 def list_employees(service: Service, query: Annotated[EmployeeQuery, Query()]):
     return service.list(query)
+
+
+@router.get("/export")
+def export_employees(service: Service, query: Annotated[EmployeeQuery, Query()]):
+    return Response(
+        content=service.export_csv(query),
+        media_type=CSV_MEDIA_TYPE,
+        headers={"Content-Disposition": f'attachment; filename="{EXPORT_FILENAME}"'},
+    )
+
+
+@router.post("/import", response_model=ImportReport)
+async def import_employees(service: Service, file: UploadFile):
+    return service.import_csv((await file.read()).decode())
 
 
 @router.post("", response_model=EmployeeRead, status_code=status.HTTP_201_CREATED)
