@@ -3,6 +3,7 @@ import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { Suspense, lazy, useState } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
+import Footer from './components/Footer'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import EmployeesPage from './pages/EmployeesPage'
@@ -35,6 +36,7 @@ export default function App() {
               </Routes>
             </Suspense>
           </Box>
+          <Footer />
         </Box>
       </Box>
     </ProductTour>
