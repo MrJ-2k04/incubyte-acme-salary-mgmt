@@ -1,4 +1,4 @@
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Integer, Select, cast, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.employees.schemas import EmployeeQuery, EmployeeStatus, SortOrder
@@ -62,6 +62,40 @@ class EmployeeRepository:
         query = select(func.lower(Employee.email)).where(func.lower(Employee.email).in_(emails))
         return set(self.session.scalars(query))
 
+    def raise_summary(self, query: EmployeeQuery, factor: float):
+        statement = select(
+            func.count(Employee.id).label("headcount"),
+            func.sum(Employee.salary * Country.usd_rate).label("before_usd"),
+            func.sum(raised(factor) * Country.usd_rate).label("after_usd"),
+        ).join(Employee.country)
+        return self.session.execute(self._filtered(statement, query)).one()
+
+    def raise_sample(self, query: EmployeeQuery, factor: float, limit: int):
+        statement = (
+            select(
+                Employee.full_name,
+                Country.currency,
+                Employee.salary,
+                raised(factor).label("new_salary"),
+            )
+            .join(Employee.country)
+            .order_by(Employee.full_name, Employee.id)
+            .limit(limit)
+        )
+        return list(self.session.execute(self._filtered(statement, query)))
+
+    def raise_salaries(self, query: EmployeeQuery, factor: float) -> int:
+        matching = self._filtered(select(Employee.id), query)
+        statement = (
+            update(Employee)
+            .where(Employee.id.in_(matching))
+            .values(salary=raised(factor))
+            .execution_options(synchronize_session=False)
+        )
+        updated = self.session.execute(statement).rowcount
+        self.session.commit()
+        return updated
+
     def _ordered(self, query: EmployeeQuery) -> Select:
         column = getattr(Employee, query.sort)
         ordering = column.desc() if query.order == SortOrder.DESC else column.asc()
@@ -88,3 +122,8 @@ class EmployeeRepository:
                 )
             )
         return statement
+
+
+# Rounded to whole units, the same way salaries are stored.
+def raised(factor: float):
+    return cast(func.round(Employee.salary * factor), Integer)
