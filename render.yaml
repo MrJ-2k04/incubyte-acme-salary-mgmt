@@ -9,7 +9,8 @@ services:
     buildCommand: pip install uv && uv sync --locked --no-dev
     startCommand: .venv/bin/alembic upgrade head && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    autoDeployTrigger: checksPass
+    # Deploys come from the CI/CD pipeline after every check passes.
+    autoDeployTrigger: "off"
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.7

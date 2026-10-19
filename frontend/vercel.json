@@ -1,3 +1,4 @@
 {
+  "git": { "deploymentEnabled": { "production": false } },
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
