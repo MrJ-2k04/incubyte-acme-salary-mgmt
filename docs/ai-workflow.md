@@ -122,3 +122,23 @@ The local SQLite tests could not show this, because there is no network locally.
 - **Import** adds every valid row and reports each bad row by line number and reason. It checks emails with one query for the whole file.
 
 One test issue came up. Reading an uploaded file body through MSW hangs under jsdom. The agent showed this by removing the body read and seeing the test pass. The frontend test now checks that the upload is multipart, and the backend tests cover parsing the file.
+
+### 11. A modern UI on its own branch
+
+> Lets make the UI super modern and sexy. Create a worktree and a feature branch for the ui, lets see it working in the localhost so we can go back and forth before actual deployment or merge.
+
+> Centralize the theme so I can change the color palettes any time. Don't use purple. Make the dark mode a little less dark. Make the insights the first page and call it dashboard, and open the employee list when an insight is clicked. Think more creatively about archived employees. Add a product tour for new visitors. Keep the theme switch and the user details at the foot of the sidebar like Vercel.
+
+**Outcome:** the work ran in a separate git worktree on `feature/modern-ui`, so `develop` stayed untouched while I reviewed it on localhost. Each change landed as its own commit, with a test commit first wherever behaviour changed:
+- **One palette file.** Every colour comes from `theme/palettes.ts`. Changing one line swaps the whole app between petrol teal, cobalt and graphite. Dark mode is charcoal, not black.
+- **Dashboard first.** Countries, chart bars, job titles and the headcount card all open the employee list already filtered. Filters live in the address, so these links are also shareable.
+- **Archive as a product feature.** The "Show archived" switch became Active, Archived and All views with live counts. Archiving shows an Undo toast, and an empty archive explains why archiving beats deleting. The API swapped `include_archived` for `status`.
+- **Sidebar and tour.** The theme choice (light, dark or system, system by default) and the user sit at the foot of the sidebar. First-time visitors get a spotlight tour across both pages, and can replay it from the top bar.
+
+Agent decisions I reviewed:
+- **Built the tour by hand** instead of adding a tour library. It follows the app theme, needs no new dependency, and the tests can drive it.
+- **Counted each view with a one-row query,** so the tab counts come from the same filtered SQL as the list.
+
+Agent mistakes caught by tooling:
+- A Python edit on Windows wrote one character in the wrong encoding. The linter refused the file, and the agent fixed the byte and moved to UTF-8 edits.
+- A tour check passed when both sides were empty, then crashed. The tour tests failed, and the agent fixed the check.

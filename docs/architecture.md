@@ -120,7 +120,7 @@ Planned for the "should have" features, not built yet:
 - **Seeding** uses batched bulk inserts and a fixed random seed. 10,000 rows load in seconds and every run produces the same data.
 - **Import** checks every email in the file against the database in one query, not one per row. On a remote database each query costs a network round trip.
 - **Seeding and import send rows in bulk.** Row-by-row inserts took over a minute against Neon. One multi-row INSERT per 1,000 rows takes about 4 seconds for 10,000.
-- **The insights page loads its charts only when opened.** The main bundle is about 190 kB gzipped and the insights chunk about 95 kB.
+- **The dashboard charts load as their own chunk,** so the employees page never downloads them. The main bundle is about 210 kB gzipped and the dashboard chunk about 95 kB.
 
 ### Measured on 10,000 seeded employees
 
