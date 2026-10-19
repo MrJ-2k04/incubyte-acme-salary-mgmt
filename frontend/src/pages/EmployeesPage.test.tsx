@@ -106,4 +106,55 @@ describe('EmployeesPage', () => {
 
     await waitFor(() => expect(archived).toBe(true))
   })
+
+  it('links export to the current filters', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+
+    await user.selectOptions(screen.getByLabelText('Country'), 'IN')
+
+    const href = new URL(screen.getByRole('link', { name: 'Export CSV' }).getAttribute('href')!)
+    expect(href.pathname).toBe(API_PATH.export)
+    expect(href.searchParams.get('country')).toBe('IN')
+  })
+
+  it('imports a csv file and reports rejected lines', async () => {
+    const user = userEvent.setup()
+    let uploaded: File | undefined
+    server.use(
+      http.post(url(API_PATH.import), async ({ request }) => {
+        uploaded = (await request.formData()).get('file') as File
+        return HttpResponse.json({
+          imported: 2,
+          rejected: [{ line: 3, errors: ['salary: Input should be greater than 0'] }],
+        })
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+
+    const file = new File(['full_name,email
+'], 'staff.csv', { type: 'text/csv' })
+    await user.upload(screen.getByLabelText('Import CSV'), file)
+
+    expect(await screen.findByText('Imported 2 employees. 1 line rejected.')).toBeInTheDocument()
+    expect(screen.getByText('Line 3: salary: Input should be greater than 0')).toBeInTheDocument()
+    expect(uploaded?.name).toBe('staff.csv')
+  })
+
+  it('explains why a whole file was refused', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(url(API_PATH.import), () =>
+        HttpResponse.json({ detail: 'Missing columns: salary' }, { status: 422 }),
+      ),
+    )
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+
+    await user.upload(screen.getByLabelText('Import CSV'), new File(['x'], 'bad.csv', { type: 'text/csv' }))
+
+    expect(await screen.findByText('Missing columns: salary')).toBeInTheDocument()
+  })
 })
