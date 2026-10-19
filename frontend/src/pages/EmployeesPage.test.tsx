@@ -10,6 +10,8 @@ import EmployeesPage from './EmployeesPage'
 
 let lastListUrl: URL
 
+const optionLabels = (select: HTMLElement) => [...(select as HTMLSelectElement).options].map((o) => o.textContent)
+
 beforeEach(() => {
   server.use(
     referenceHandler,
@@ -42,6 +44,63 @@ describe('EmployeesPage', () => {
     })
   })
 
+  it('waits for a pause in typing before searching and keeps the cursor in the box', async () => {
+    const user = userEvent.setup()
+    const searched: (string | null)[] = []
+    server.use(
+      http.get(url(API_PATH.employees), ({ request }) => {
+        searched.push(new URL(request.url).searchParams.get('q'))
+        return HttpResponse.json(page([asha]))
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+    const search = screen.getByLabelText('Search name or email')
+
+    await user.type(search, 'asha')
+
+    expect(search).toHaveFocus()
+    expect(search).toHaveValue('asha')
+    await waitFor(() => expect(searched).toContain('asha'))
+    expect(searched.filter((q) => q && q !== 'asha')).toEqual([])
+  })
+
+  it('starts from the filters given in the address', async () => {
+    renderWithProviders(<EmployeesPage />, { route: '/employees?country=IN&job_title=Software+Engineer' })
+    await screen.findByText('Asha Rao')
+
+    expect(lastListUrl.searchParams.get('country')).toBe('IN')
+    expect(lastListUrl.searchParams.get('job_title')).toBe('Software Engineer')
+    expect(screen.getByLabelText('Country')).toHaveValue('IN')
+  })
+
+  it('filters by department first and offers only its job titles', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+    const department = screen.getByLabelText('Department')
+    const jobTitle = screen.getByLabelText('Job title')
+    expect(department.compareDocumentPosition(jobTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    await user.selectOptions(jobTitle, 'Software Engineer')
+    await user.selectOptions(department, 'Finance')
+
+    expect(optionLabels(screen.getByLabelText('Job title'))).toEqual(['All job titles', 'Accountant'])
+    expect(screen.getByLabelText('Job title')).toHaveValue('')
+  })
+
+  it('asks for the department before the job title when adding someone', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByLabelText(/^Job title/)).toBeDisabled()
+    await user.selectOptions(within(dialog).getByLabelText(/^Department/), 'Engineering')
+
+    expect(optionLabels(within(dialog).getByLabelText(/^Job title/))).toEqual(['', 'Software Engineer'])
+  })
+
   it('adds an employee through the form', async () => {
     const user = userEvent.setup()
     let posted: unknown
@@ -57,8 +116,8 @@ describe('EmployeesPage', () => {
     const dialog = screen.getByRole('dialog')
     await user.type(within(dialog).getByLabelText(/^Full name/), 'Ben Clark')
     await user.type(within(dialog).getByLabelText(/^Email/), 'ben@acmecorp.com')
-    await user.selectOptions(within(dialog).getByLabelText(/^Job title/), 'Accountant')
     await user.selectOptions(within(dialog).getByLabelText(/^Department/), 'Finance')
+    await user.selectOptions(within(dialog).getByLabelText(/^Job title/), 'Accountant')
     await user.selectOptions(within(dialog).getByLabelText(/^Country/), 'US')
     await user.type(within(dialog).getByLabelText(/^Annual salary/), '90000')
     await user.type(within(dialog).getByLabelText(/^Hire date/), '2024-02-01')
@@ -91,7 +150,7 @@ describe('EmployeesPage', () => {
     expect(await screen.findByText('Email is already in use')).toBeInTheDocument()
   })
 
-  it('archives an employee', async () => {
+  it('asks for confirmation before archiving an employee', async () => {
     const user = userEvent.setup()
     let archived = false
     server.use(
@@ -103,8 +162,69 @@ describe('EmployeesPage', () => {
     renderWithProviders(<EmployeesPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Archive Asha Rao' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Archive Asha Rao?' })).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(archived).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Archive Asha Rao' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Archive' }))
 
     await waitFor(() => expect(archived).toBe(true))
+  })
+
+  it('offers to undo an archive straight away', async () => {
+    const user = userEvent.setup()
+    let restored = false
+    server.use(
+      http.post(url(API_PATH.archive(asha.id)), () =>
+        HttpResponse.json({ ...asha, archived_at: '2026-01-01T00:00:00' }),
+      ),
+      http.post(url(API_PATH.restore(asha.id)), () => {
+        restored = true
+        return HttpResponse.json(asha)
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Archive Asha Rao' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Archive' }))
+    expect(await screen.findByText('Asha Rao archived')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    await waitFor(() => expect(restored).toBe(true))
+  })
+
+  it('shows archived people in their own view', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+
+    await user.click(screen.getByRole('tab', { name: /^Archived/ }))
+
+    expect(screen.getByRole('tab', { name: /^Archived/ })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(lastListUrl.searchParams.get('status')).toBe('archived'))
+  })
+
+  it('shows how many people are in each view', async () => {
+    server.use(
+      http.get(url(API_PATH.employees), ({ request }) => {
+        const archived = new URL(request.url).searchParams.get('status') === 'archived'
+        return HttpResponse.json({ ...page([asha]), total: archived ? 3 : 120 })
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+
+    expect(await screen.findByRole('tab', { name: 'Active 120' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Archived 3' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'All 123' })).toBeInTheDocument()
+  })
+
+  it('explains what archiving is for when nobody is archived', async () => {
+    server.use(http.get(url(API_PATH.employees), () => HttpResponse.json(page([]))))
+    renderWithProviders(<EmployeesPage />, { route: '/employees?status=archived' })
+
+    expect(await screen.findByText('No archived employees')).toBeInTheDocument()
+    expect(screen.getByText(/records are kept/)).toBeInTheDocument()
   })
 
   it('links export to the current filters', async () => {

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.employees.schemas import EmployeeQuery, SortField, SortOrder
+from app.employees.schemas import EmployeeQuery, EmployeeStatus, SortField, SortOrder
 from app.employees.service import EmployeeService
 from app.reference import Department
 from tests.factories import employee_data
@@ -67,12 +67,13 @@ def test_list_searches_name_and_email_ignoring_case(service):
     assert names(service.list(EmployeeQuery(q="ben.clark@"))) == ["Ben Clark"]
 
 
-def test_list_hides_archived_employees_unless_asked(service):
+def test_list_shows_active_employees_unless_another_status_is_asked(service):
     archived = service.list(EmployeeQuery(q="Ben")).items[0]
     service.archive(archived.id)
 
     assert "Ben Clark" not in names(service.list(EmployeeQuery()))
-    assert "Ben Clark" in names(service.list(EmployeeQuery(include_archived=True)))
+    assert names(service.list(EmployeeQuery(status=EmployeeStatus.ARCHIVED))) == ["Ben Clark"]
+    assert service.list(EmployeeQuery(status=EmployeeStatus.ALL)).total == 5
 
 
 def test_list_page_size_is_capped_at_100():

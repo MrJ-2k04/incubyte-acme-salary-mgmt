@@ -65,6 +65,16 @@ def test_archive_and_restore(client):
     assert restored["archived_at"] is None
 
 
+def test_list_reads_the_status_from_query_params(client):
+    create(client)
+    employee_id = create(client, full_name="Ben Clark", email="ben@acmecorp.com").json()["id"]
+    client.post(f"{EMPLOYEES_PATH}/{employee_id}/archive")
+
+    response = client.get(EMPLOYEES_PATH, params={"status": "archived"})
+
+    assert [e["full_name"] for e in response.json()["items"]] == ["Ben Clark"]
+
+
 def test_list_reads_filters_and_paging_from_query_params(client):
     create(client)
     create(client, full_name="Ben Clark", email="ben@acmecorp.com", country_code="US")

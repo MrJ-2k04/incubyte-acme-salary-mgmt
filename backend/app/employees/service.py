@@ -47,7 +47,7 @@ class EmployeeService:
     def countries(self) -> list[Country]:
         return self.repository.countries()
 
-    def job_titles(self) -> list[str]:
+    def job_titles(self) -> dict[str, list[str]]:
         return self.repository.job_titles()
 
     def get(self, employee_id: int) -> Employee:
