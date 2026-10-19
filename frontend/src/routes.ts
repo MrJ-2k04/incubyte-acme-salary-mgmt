@@ -1,9 +1,9 @@
+import DashboardOutlined from '@mui/icons-material/DashboardOutlined'
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined'
-import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
 
-export const ROUTE = { employees: '/', insights: '/insights' } as const
+export const ROUTE = { dashboard: '/', employees: '/employees' } as const
 
 export const NAV_ITEMS = [
+  { path: ROUTE.dashboard, label: 'Dashboard', icon: DashboardOutlined },
   { path: ROUTE.employees, label: 'Employees', icon: GroupsOutlined },
-  { path: ROUTE.insights, label: 'Insights', icon: InsightsOutlined },
 ] as const

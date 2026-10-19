@@ -26,7 +26,8 @@ describe('App', () => {
   it('opens on the dashboard and marks it in the sidebar', async () => {
     renderWithProviders(<App />)
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    // The dashboard is a lazy chunk, and loading the chart library can take a moment.
+    expect(await screen.findByRole('heading', { name: 'Dashboard' }, { timeout: 5000 })).toBeInTheDocument()
     const sidebar = screen.getByRole('navigation', { name: 'Main' })
     expect(within(sidebar).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
     expect(within(sidebar).getByRole('link', { name: 'Employees' })).not.toHaveAttribute('aria-current')

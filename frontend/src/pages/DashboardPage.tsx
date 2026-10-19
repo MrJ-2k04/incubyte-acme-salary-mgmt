@@ -101,7 +101,7 @@ function Meter({ value, max }: { value: number; max: number }) {
   )
 }
 
-export default function InsightsPage() {
+export default function DashboardPage() {
   const summary = useSummary()
   const countries = useCountryInsights()
   const [titleCountry, setTitleCountry] = useState('')
@@ -117,7 +117,7 @@ export default function InsightsPage() {
 
   return (
     <Stack spacing={3}>
-      <PageHeader title="Insights" subtitle="How pay compares across countries, roles and ranges." />
+      <PageHeader title="Dashboard" subtitle="How pay compares across countries, roles and ranges." />
 
       {error && <Alert severity="error">{error.message}</Alert>}
 

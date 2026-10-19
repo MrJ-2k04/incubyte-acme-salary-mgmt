@@ -8,8 +8,8 @@ import TopBar from './components/TopBar'
 import EmployeesPage from './pages/EmployeesPage'
 import { NAV_ITEMS, ROUTE } from './routes'
 
-// Charts are heavy, so they load only when someone opens insights.
-const InsightsPage = lazy(() => import('./pages/InsightsPage'))
+// Charts are heavy, so they load apart from the rest of the app.
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 
 export default function App() {
   const { pathname } = useLocation()
@@ -28,8 +28,8 @@ export default function App() {
         >
           <Suspense>
             <Routes>
+              <Route path={ROUTE.dashboard} element={<DashboardPage />} />
               <Route path={ROUTE.employees} element={<EmployeesPage />} />
-              <Route path={ROUTE.insights} element={<InsightsPage />} />
             </Routes>
           </Suspense>
         </Box>

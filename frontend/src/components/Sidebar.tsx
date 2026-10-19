@@ -69,7 +69,7 @@ export default function Sidebar({ mobile, open, onClose }: Props) {
                 key={path}
                 component={NavLink}
                 to={path}
-                end={path === ROUTE.employees}
+                end={path === ROUTE.dashboard}
                 onClick={onClose}
                 sx={{
                   borderRadius: 2,

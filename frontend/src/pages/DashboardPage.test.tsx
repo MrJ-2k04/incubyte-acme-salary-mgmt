@@ -7,7 +7,7 @@ import type { CountryInsight } from '../api/types'
 import { url } from '../test/fixtures'
 import { renderWithProviders } from '../test/render'
 import { server } from '../test/server'
-import InsightsPage from './InsightsPage'
+import DashboardPage from './DashboardPage'
 
 const india: CountryInsight = {
   country_code: 'IN',
@@ -37,16 +37,16 @@ beforeEach(() => {
   )
 })
 
-describe('InsightsPage', () => {
+describe('DashboardPage', () => {
   it('shows org-wide totals in USD', async () => {
-    renderWithProviders(<InsightsPage />)
+    renderWithProviders(<DashboardPage />)
 
     expect(await screen.findByText('9,691')).toBeInTheDocument()
     expect(screen.getByText('$755,108,661')).toBeInTheDocument()
   })
 
   it('shows pay per country in local currency and USD', async () => {
-    renderWithProviders(<InsightsPage />)
+    renderWithProviders(<DashboardPage />)
 
     const row = (await screen.findByRole('cell', { name: 'India' })).closest('tr')!
     expect(within(row).getByText('₹2,000,000')).toBeInTheDocument()
@@ -55,7 +55,7 @@ describe('InsightsPage', () => {
 
   it('shows pay by job title for the chosen country', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<InsightsPage />)
+    renderWithProviders(<DashboardPage />)
     await screen.findByRole('cell', { name: 'India' })
 
     await user.selectOptions(screen.getByLabelText('Country for job titles'), 'IN')
