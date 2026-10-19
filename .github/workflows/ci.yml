@@ -5,6 +5,7 @@ on:
     branches: [develop, production]
   pull_request:
     branches: [develop, production]
+  workflow_dispatch:
 
 jobs:
   backend:
