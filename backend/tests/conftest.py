@@ -12,7 +12,6 @@ from app.main import app
 from app.models import Country
 from app.reference import COUNTRIES
 
-
 # CI sets this to run the same tests on Postgres. Locally tests use in-memory SQLite.
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
