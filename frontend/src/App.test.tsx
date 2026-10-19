@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { API_PATH } from './api/client'
@@ -33,9 +34,24 @@ describe('App', () => {
     expect(within(sidebar).getByRole('link', { name: 'Employees' })).not.toHaveAttribute('aria-current')
   })
 
-  it('offers a switch between light and dark mode', () => {
+  it('follows the system theme until someone picks light or dark', async () => {
+    const user = userEvent.setup()
     renderWithProviders(<App />)
 
-    expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument()
+    const theme = screen.getByRole('group', { name: 'Theme' })
+    expect(within(theme).getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(within(theme).getByRole('button', { name: 'Dark' }))
+
+    expect(within(theme).getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(theme).getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('shows who is signed in at the foot of the sidebar', () => {
+    renderWithProviders(<App />)
+
+    const sidebar = screen.getByRole('complementary', { name: 'Sidebar' })
+    expect(within(sidebar).getByText('HR Manager')).toBeInTheDocument()
+    expect(within(sidebar).getByRole('group', { name: 'Theme' })).toBeInTheDocument()
   })
 })

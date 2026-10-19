@@ -10,9 +10,23 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 }
 
+// jsdom has no media queries, and the theme reads the system colour scheme through one.
+globalThis.matchMedia ??= (query: string) =>
+  ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener() {},
+    removeListener() {},
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent: () => false,
+  }) as MediaQueryList
+
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(() => {
   cleanup()
   server.resetHandlers()
+  localStorage.clear()
 })
 afterAll(() => server.close())
