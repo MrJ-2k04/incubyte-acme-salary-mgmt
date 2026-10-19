@@ -16,7 +16,7 @@ export default function Footer() {
         <Link href={CREDIT.url} target="_blank" rel="noopener" color="inherit" underline="hover" sx={{ fontWeight: 600 }}>
           {CREDIT.name}
         </Link>
-        . All rights reserved.
+        &nbsp;| All rights reserved.
       </Typography>
     </Box>
   )
