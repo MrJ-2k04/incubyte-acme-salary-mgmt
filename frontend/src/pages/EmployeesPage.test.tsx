@@ -116,6 +116,60 @@ describe('EmployeesPage', () => {
     await waitFor(() => expect(archived).toBe(true))
   })
 
+  it('offers to undo an archive straight away', async () => {
+    const user = userEvent.setup()
+    let restored = false
+    server.use(
+      http.post(url(API_PATH.archive(asha.id)), () =>
+        HttpResponse.json({ ...asha, archived_at: '2026-01-01T00:00:00' }),
+      ),
+      http.post(url(API_PATH.restore(asha.id)), () => {
+        restored = true
+        return HttpResponse.json(asha)
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Archive Asha Rao' }))
+    expect(await screen.findByText('Asha Rao archived')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    await waitFor(() => expect(restored).toBe(true))
+  })
+
+  it('shows archived people in their own view', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+
+    await user.click(screen.getByRole('tab', { name: /^Archived/ }))
+
+    expect(screen.getByRole('tab', { name: /^Archived/ })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(lastListUrl.searchParams.get('status')).toBe('archived'))
+  })
+
+  it('shows how many people are in each view', async () => {
+    server.use(
+      http.get(url(API_PATH.employees), ({ request }) => {
+        const archived = new URL(request.url).searchParams.get('status') === 'archived'
+        return HttpResponse.json({ ...page([asha]), total: archived ? 3 : 120 })
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+
+    expect(await screen.findByRole('tab', { name: 'Active 120' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Archived 3' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'All 123' })).toBeInTheDocument()
+  })
+
+  it('explains what archiving is for when nobody is archived', async () => {
+    server.use(http.get(url(API_PATH.employees), () => HttpResponse.json(page([]))))
+    renderWithProviders(<EmployeesPage />, { route: '/employees?status=archived' })
+
+    expect(await screen.findByText('No archived employees')).toBeInTheDocument()
+    expect(screen.getByText(/records are kept/)).toBeInTheDocument()
+  })
+
   it('links export to the current filters', async () => {
     const user = userEvent.setup()
     renderWithProviders(<EmployeesPage />)
