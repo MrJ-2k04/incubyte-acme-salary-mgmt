@@ -11,6 +11,34 @@ A web tool for ACME's HR team to manage salaries for about 10,000 employees acro
 - **Tests:** pytest, Vitest, React Testing Library, MSW
 - **Hosting:** Render (API), Vercel (UI)
 
+## Run locally
+
+Needs [uv](https://docs.astral.sh/uv/) and Node 24.
+
+```powershell
+# API on http://localhost:8000 (docs at /docs)
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload
+
+# UI on http://localhost:5173
+cd frontend
+npm install
+npm run dev
+```
+
+## Test
+
+```powershell
+cd backend; uv run pytest
+cd frontend; npm test
+```
+
+## Branches
+
+- `develop`: day-to-day work. CI runs on every push.
+- `production`: what is deployed. Changes arrive by pull request from `develop`, and deploy only after CI passes.
+
 ## Docs
 
 - [Requirements](docs/requirements.md): goal, scope, assumptions and what is left out
