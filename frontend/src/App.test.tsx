@@ -7,7 +7,7 @@ import App from './App'
 import { page, referenceHandler, url } from './test/fixtures'
 import { renderWithProviders } from './test/render'
 import { server } from './test/server'
-import { TOUR_SEEN_KEY } from './tour/steps'
+import { TOUR_SEEN_KEY, TOUR_STEPS } from './tour/steps'
 
 beforeEach(() => {
   server.use(referenceHandler, http.get(url(API_PATH.employees), () => HttpResponse.json(page([]))))
@@ -32,6 +32,24 @@ describe('Product tour', () => {
     unmount()
     renderWithProviders(<App />)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens the account menu on the last step so a theme can be picked', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<App />)
+
+    await user.click(await screen.findByRole('button', { name: 'Start tour' }))
+    for (let step = 1; step < TOUR_STEPS.length - 1; step++) {
+      await user.click(screen.getByRole('button', { name: 'Next' }))
+    }
+
+    expect(await screen.findByRole('dialog', { name: 'Make it yours' })).toBeInTheDocument()
+    const theme = screen.getByRole('group', { name: 'Theme' })
+    await user.click(within(theme).getByRole('button', { name: 'Dark' }))
+    expect(within(theme).getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    expect(screen.queryByRole('group', { name: 'Theme' })).not.toBeInTheDocument()
   })
 
   it('can be replayed from the top bar', async () => {
@@ -94,6 +112,7 @@ describe('App', () => {
     await user.click(within(sidebar).getByRole('button', { name: 'Account menu' }))
 
     expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
+    expect(screen.queryByText('Take the product tour')).not.toBeInTheDocument()
   })
 
   it('credits webwizards.in in the footer', () => {
