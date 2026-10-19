@@ -74,3 +74,8 @@ export type Distribution = {
   currency: string
   buckets: { lower: number; upper: number; count: number }[]
 }
+
+export type ImportReport = {
+  imported: number
+  rejected: { line: number; errors: string[] }[]
+}

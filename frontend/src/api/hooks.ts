@@ -7,6 +7,7 @@ import type {
   EmployeeInput,
   EmployeePage,
   EmployeeQuery,
+  ImportReport,
   JobTitleInsight,
   ReferenceData,
   Summary,
@@ -56,6 +57,18 @@ export function useSetArchived() {
   return useMutation({
     mutationFn: ({ id, archived }: { id: number; archived: boolean }) =>
       request<Employee>(archived ? API_PATH.archive(id) : API_PATH.restore(id), { method: 'POST' }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useImportEmployees() {
+  const invalidate = useInvalidateAll()
+  return useMutation({
+    mutationFn: (file: File) => {
+      const body = new FormData()
+      body.append('file', file)
+      return request<ImportReport>(API_PATH.import, { method: 'POST', body })
+    },
     onSuccess: invalidate,
   })
 }

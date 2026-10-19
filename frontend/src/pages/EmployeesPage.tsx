@@ -18,9 +18,11 @@ import TableRow from '@mui/material/TableRow'
 import TableSortLabel from '@mui/material/TableSortLabel'
 import TextField from '@mui/material/TextField'
 import { useState } from 'react'
-import { useEmployees, useReference, useSetArchived } from '../api/hooks'
+import { API_PATH, buildUrl } from '../api/client'
+import { useEmployees, useImportEmployees, useReference, useSetArchived } from '../api/hooks'
 import type { Employee, EmployeeQuery, SortOrder } from '../api/types'
 import EmployeeDialog from '../components/EmployeeDialog'
+import ImportResult from '../components/ImportResult'
 import SelectField from '../components/SelectField'
 import { formatMoney } from '../format'
 
@@ -52,6 +54,7 @@ export default function EmployeesPage() {
   const employees = useEmployees({ ...filters, sort, order, page: page + 1, size })
   const reference = useReference()
   const setArchived = useSetArchived()
+  const importCsv = useImportEmployees()
 
   const filter = (field: keyof Filters) => (value: string | boolean) => {
     setFilters((current) => ({ ...current, [field]: value }))
@@ -109,12 +112,36 @@ export default function EmployeesPage() {
           }
           label="Show archived"
         />
-        <Button variant="contained" sx={{ ml: { md: 'auto' } }} onClick={() => setEditing(null)}>
-          Add employee
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ ml: { md: 'auto' } }}>
+          <Button component="label" variant="outlined" loading={importCsv.isPending}>
+            Import CSV
+            <input
+              hidden
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) importCsv.mutate(file)
+                e.target.value = ''
+              }}
+            />
+          </Button>
+          <Button variant="outlined" href={buildUrl(API_PATH.export, { ...filters, sort, order })}>
+            Export CSV
+          </Button>
+          <Button variant="contained" onClick={() => setEditing(null)}>
+            Add employee
+          </Button>
+        </Stack>
       </Stack>
 
       {employees.error && <Alert severity="error">{employees.error.message}</Alert>}
+      {importCsv.error && (
+        <Alert severity="error" onClose={importCsv.reset}>
+          {importCsv.error.message}
+        </Alert>
+      )}
+      {importCsv.data && <ImportResult report={importCsv.data} onClose={importCsv.reset} />}
 
       <Paper variant="outlined">
         <TableContainer>
