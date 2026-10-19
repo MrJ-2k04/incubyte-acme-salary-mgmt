@@ -36,6 +36,7 @@ import { useSearchParams } from 'react-router-dom'
 import { API_PATH, buildUrl } from '../api/client'
 import { useEmployees, useImportEmployees, useReference, useSetArchived } from '../api/hooks'
 import { EMPLOYEE_STATUS, type Employee, type EmployeeStatus, type SortOrder } from '../api/types'
+import ConfirmDialog from '../components/ConfirmDialog'
 import EmployeeDialog from '../components/EmployeeDialog'
 import ImportResult from '../components/ImportResult'
 import PageHeader from '../components/PageHeader'
@@ -94,6 +95,7 @@ export default function EmployeesPage() {
   const [size, setSize] = useState(PAGE_SIZES[0])
   const [editing, setEditing] = useState<Editing>()
   const [lastChange, setLastChange] = useState<ArchiveChange>()
+  const [confirmingArchive, setConfirmingArchive] = useState<Employee>()
   // The box keeps its own text, so typing never waits on the address bar or the API.
   const [search, setSearch] = useState(() => params.get('q') ?? '')
   const searchTimer = useRef<number>(undefined)
@@ -470,7 +472,7 @@ export default function EmployeesPage() {
                             <IconButton
                               size="small"
                               aria-label={`Archive ${employee.full_name}`}
-                              onClick={() => changeArchived({ employee, archived: true })}
+                              onClick={() => setConfirmingArchive(employee)}
                             >
                               <ArchiveOutlined fontSize="small" />
                             </IconButton>
@@ -531,6 +533,19 @@ export default function EmployeesPage() {
           </Button>
         }
       />
+
+      {confirmingArchive && (
+        <ConfirmDialog
+          title={`Archive ${confirmingArchive.full_name}?`}
+          body="They will leave the active list and drop out of payroll insights. Their record is kept, and you can restore them any time from the Archived view."
+          confirmLabel="Archive"
+          onClose={() => setConfirmingArchive(undefined)}
+          onConfirm={() => {
+            changeArchived({ employee: confirmingArchive, archived: true })
+            setConfirmingArchive(undefined)
+          }}
+        />
+      )}
 
       {editing !== undefined && reference.data && (
         <EmployeeDialog
