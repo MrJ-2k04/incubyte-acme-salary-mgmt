@@ -44,6 +44,27 @@ describe('EmployeesPage', () => {
     })
   })
 
+  it('waits for a pause in typing before searching and keeps the cursor in the box', async () => {
+    const user = userEvent.setup()
+    const searched: (string | null)[] = []
+    server.use(
+      http.get(url(API_PATH.employees), ({ request }) => {
+        searched.push(new URL(request.url).searchParams.get('q'))
+        return HttpResponse.json(page([asha]))
+      }),
+    )
+    renderWithProviders(<EmployeesPage />)
+    await screen.findByText('Asha Rao')
+    const search = screen.getByLabelText('Search name or email')
+
+    await user.type(search, 'asha')
+
+    expect(search).toHaveFocus()
+    expect(search).toHaveValue('asha')
+    await waitFor(() => expect(searched).toContain('asha'))
+    expect(searched.filter((q) => q && q !== 'asha')).toEqual([])
+  })
+
   it('starts from the filters given in the address', async () => {
     renderWithProviders(<EmployeesPage />, { route: '/employees?country=IN&job_title=Software+Engineer' })
     await screen.findByText('Asha Rao')
