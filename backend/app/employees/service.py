@@ -11,7 +11,7 @@ from app.employees.schemas import (
     EmployeeRead,
     EmployeeUpdate,
 )
-from app.models import Employee
+from app.models import Country, Employee
 
 
 class EmployeeNotFoundError(Exception):
@@ -39,6 +39,12 @@ class EmployeeService:
         self._check_country(data.country_code)
         email = self._unused_email(data.email)
         return self.repository.add(Employee(**data.model_dump() | {"email": email}))
+
+    def countries(self) -> list[Country]:
+        return self.repository.countries()
+
+    def job_titles(self) -> list[str]:
+        return self.repository.job_titles()
 
     def get(self, employee_id: int) -> Employee:
         employee = self.repository.get(employee_id)

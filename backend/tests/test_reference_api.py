@@ -1,11 +1,10 @@
+from app.employees.service import EmployeeService
 from app.reference import COUNTRIES, Department
 from app.reference_router import REFERENCE_PATH
 from tests.factories import employee_data
 
 
 def test_reference_lists_countries_departments_and_job_titles_in_use(client, session):
-    from app.employees.service import EmployeeService
-
     service = EmployeeService(session)
     service.create(employee_data(email="a@acmecorp.com", job_title="Designer"))
     service.create(employee_data(email="b@acmecorp.com", job_title="Accountant"))
