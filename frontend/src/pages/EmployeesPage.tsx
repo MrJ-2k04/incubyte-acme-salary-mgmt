@@ -314,8 +314,8 @@ export default function EmployeesPage() {
           />
         </Stack>
 
-        <TableContainer sx={{ maxHeight: { md: 'calc(100vh - 360px)' }, minHeight: 240 }}>
-          <Table stickyHeader>
+        <TableContainer>
+          <Table>
             <TableHead>
               <TableRow>
                 {COLUMNS.map((column) => (
@@ -405,7 +405,7 @@ export default function EmployeesPage() {
                               </Tooltip>
                             )}
                           </Stack>
-                          <Typography variant="body2" color="text.secondary" noWrap>
+                          <Typography variant="caption" color="text.secondary" noWrap component="div">
                             {employee.email}
                           </Typography>
                         </Box>
