@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { StartTourContext } from './context'
+import { TourContext } from './context'
 import { TOUR_SEEN_KEY, TOUR_STEPS, type TourStep } from './steps'
 
 const SPOTLIGHT_PADDING = 8
@@ -52,8 +52,9 @@ function useTargetRect(target: TourStep['target']): Rect | undefined {
     }
 
     // The target can live on a page that is still loading, so keep looking as the page changes.
+    // Inline style changes count too, because popovers move into place by setting them.
     const observer = new MutationObserver(findOrMeasure)
-    observer.observe(document.body, { childList: true, subtree: true })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] })
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
     // Some targets never appear, like the sidebar folded away on a phone, so the card centres instead.
@@ -245,9 +246,9 @@ export default function ProductTour({ children }: { children: ReactNode }) {
   }
 
   return (
-    <StartTourContext value={() => goTo(0)}>
+    <TourContext value={{ start: () => goTo(0), target: index === undefined ? undefined : TOUR_STEPS[index].target }}>
       {children}
       {index !== undefined && <TourCard index={index} onStep={goTo} onFinish={finish} />}
-    </StartTourContext>
+    </TourContext>
   )
 }
