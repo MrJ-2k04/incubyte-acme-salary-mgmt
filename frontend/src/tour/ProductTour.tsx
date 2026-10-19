@@ -18,7 +18,8 @@ const CARD_HEIGHT_ESTIMATE = 230
 const CARD_GAP = 16
 const VIEWPORT_MARGIN = 16
 const DIM = 'rgba(0 0 0 / 0.55)'
-const MOVE = '300ms cubic-bezier(0.4, 0, 0.2, 1)'
+const MOVE = '350ms cubic-bezier(0.4, 0, 0.2, 1)'
+const MISSING_AFTER_MS = 1500
 
 type Rect = { top: number; left: number; width: number; height: number }
 
@@ -26,8 +27,8 @@ const sameRect = (a?: Rect, b?: Rect) =>
   a?.top === b?.top && a?.left === b?.left && a?.width === b?.width && a?.height === b?.height
 
 function useTargetRect(target: TourStep['target']): Rect | undefined {
-  // Each rect remembers its target, so a new step never shows the last step's spotlight.
   const [measured, setMeasured] = useState<{ target: string; rect: Rect }>()
+  const [missing, setMissing] = useState<string>()
 
   useLayoutEffect(() => {
     if (!target) return
@@ -55,32 +56,51 @@ function useTargetRect(target: TourStep['target']): Rect | undefined {
     observer.observe(document.body, { childList: true, subtree: true })
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
+    // Some targets never appear, like the sidebar folded away on a phone, so the card centres instead.
+    const giveUp = window.setTimeout(() => !element && setMissing(target), MISSING_AFTER_MS)
     findOrMeasure()
     return () => {
       observer.disconnect()
+      window.clearTimeout(giveUp)
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
     }
   }, [target])
 
-  return measured && measured.target === target ? measured.rect : undefined
+  if (!target) return undefined
+  if (measured?.target === target) return measured.rect
+  if (missing === target) return undefined
+  // Until the new target is found, stay on the last one so the spotlight glides across instead of resetting.
+  return measured?.rect
 }
 
-// Prefers the right of narrow targets like the sidebar, then below, then above.
+// Plain pixel positions throughout, so every move between steps can animate.
 function cardPlacement(rect?: Rect) {
-  if (!rect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
   const { innerWidth, innerHeight } = window
   const maxLeft = innerWidth - CARD_WIDTH - VIEWPORT_MARGIN
   const maxTop = innerHeight - CARD_HEIGHT_ESTIMATE - VIEWPORT_MARGIN
   const clamp = (value: number, max: number) => Math.max(VIEWPORT_MARGIN, Math.min(value, max))
-  const right = rect.left + rect.width + SPOTLIGHT_PADDING + CARD_GAP
+  if (!rect) return { top: clamp(maxTop / 2, maxTop), left: clamp(maxLeft / 2, maxLeft) }
 
+  // Prefers the right of narrow targets like the sidebar, then below, then above.
+  const right = rect.left + rect.width + SPOTLIGHT_PADDING + CARD_GAP
   if (rect.width < CARD_WIDTH && right + CARD_WIDTH < innerWidth) {
-    return { top: clamp(rect.top, maxTop), left: right, transform: 'none' }
+    return { top: clamp(rect.top, maxTop), left: right }
   }
   const below = rect.top + rect.height + SPOTLIGHT_PADDING + CARD_GAP
   const top = below + CARD_HEIGHT_ESTIMATE < innerHeight ? below : rect.top - SPOTLIGHT_PADDING - CARD_GAP - CARD_HEIGHT_ESTIMATE
-  return { top: clamp(top, maxTop), left: clamp(rect.left, maxLeft), transform: 'none' }
+  return { top: clamp(top, maxTop), left: clamp(rect.left, maxLeft) }
+}
+
+// With no target the spotlight shrinks to an invisible point in the middle, so it can grow out to the next one.
+function spotlightBox(rect?: Rect) {
+  if (!rect) return { top: window.innerHeight / 2, left: window.innerWidth / 2, width: 0, height: 0 }
+  return {
+    top: rect.top - SPOTLIGHT_PADDING,
+    left: rect.left - SPOTLIGHT_PADDING,
+    width: rect.width + SPOTLIGHT_PADDING * 2,
+    height: rect.height + SPOTLIGHT_PADDING * 2,
+  }
 }
 
 type CardProps = { index: number; onStep: (index: number) => void; onFinish: () => void }
@@ -110,26 +130,19 @@ function TourCard({ index, onStep, onFinish }: CardProps) {
 
   return (
     <Box sx={(theme) => ({ position: 'fixed', inset: 0, zIndex: theme.zIndex.tooltip + 1 })}>
-      {rect ? (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: rect.top - SPOTLIGHT_PADDING,
-            left: rect.left - SPOTLIGHT_PADDING,
-            width: rect.width + SPOTLIGHT_PADDING * 2,
-            height: rect.height + SPOTLIGHT_PADDING * 2,
-            borderRadius: 3,
-            boxShadow: `0 0 0 9999px ${DIM}`,
-            outline: 2,
-            outlineColor: 'primary.main',
-            outlineOffset: 2,
-            transition: `all ${MOVE}`,
-            pointerEvents: 'none',
-          }}
-        />
-      ) : (
-        <Box sx={{ position: 'fixed', inset: 0, bgcolor: DIM, transition: `background-color ${MOVE}` }} />
-      )}
+      <Box
+        sx={{
+          position: 'fixed',
+          ...spotlightBox(rect),
+          borderRadius: 3,
+          boxShadow: `0 0 0 9999px ${DIM}`,
+          outline: 2,
+          outlineColor: rect ? 'primary.main' : 'transparent',
+          outlineOffset: 2,
+          transition: `top ${MOVE}, left ${MOVE}, width ${MOVE}, height ${MOVE}, outline-color ${MOVE}`,
+          pointerEvents: 'none',
+        }}
+      />
 
       <Paper
         ref={card}
