@@ -101,3 +101,24 @@ Agent decisions I reviewed:
 Agent mistakes caught by tooling:
 - A commit missed a lint fix. CI caught it, and the agent now runs the full lint before every commit.
 - A test matched a label exactly, and MUI adds " *" to required fields. The test failed, and the agent switched to matching labels by their start.
+
+### 9. First production release, and a slow seed
+
+> The script was taking long so I pressed ctrl+c and it failed.
+
+**Outcome:** the agent first checked the data, not the error text:
+- **No damage.** The seed runs in one transaction, so the cancelled run had rolled back and the table was empty.
+- **Measured the cause.** Row-by-row inserts cost a network trip each against Neon: 5.0 s per 1,000 rows. One multi-row INSERT took 0.4 s for the same rows.
+- **Fixed and seeded.** After the change, the full seed took 4 seconds.
+
+The local SQLite tests could not show this, because there is no network locally. The lesson went into the import design that came next.
+
+### 10. CSV import and export
+
+> Add the CSV import / exports.
+
+**Outcome:** both built test-first:
+- **Export** downloads the list exactly as filtered and sorted.
+- **Import** adds every valid row and reports each bad row by line number and reason. It checks emails with one query for the whole file.
+
+One test issue came up. Reading an uploaded file body through MSW hangs under jsdom. The agent showed this by removing the body read and seeing the test pass. The frontend test now checks that the upload is multipart, and the backend tests cover parsing the file.
